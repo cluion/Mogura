@@ -3,11 +3,22 @@ package clean
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
 	"mogura/internal/rules"
 )
+
+// diskSize 以 du 口徑(st_blocks×512)回傳單一路徑的磁碟佔用。
+func diskSize(t *testing.T, path string) int64 {
+	t.Helper()
+	var st syscall.Stat_t
+	if err := syscall.Lstat(path, &st); err != nil {
+		t.Fatal(err)
+	}
+	return st.Blocks * 512
+}
 
 func TestGuardPath(t *testing.T) {
 	home, err := os.UserHomeDir()
@@ -75,25 +86,45 @@ func TestScanPathsWithExclude(t *testing.T) {
 	if len(targets) != 1 || targets[0] != drop {
 		t.Errorf("exclude 應排除 keep,實際 targets = %v", targets)
 	}
-	if total != 5 {
-		t.Errorf("total = %d, 預期 5", total)
+	if want := diskSize(t, drop); total != want {
+		t.Errorf("total = %d, 預期 %d(僅 drop)", total, want)
 	}
 }
 
 func TestSizeOfDirectory(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "a"), make([]byte, 100), 0o644); err != nil {
+	a := filepath.Join(dir, "a")
+	if err := os.WriteFile(a, make([]byte, 100), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sub := filepath.Join(dir, "sub")
 	if err := os.Mkdir(sub, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(sub, "b"), make([]byte, 50), 0o644); err != nil {
+	b := filepath.Join(sub, "b")
+	if err := os.WriteFile(b, make([]byte, 50), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := SizeOf(dir); got != 150 {
-		t.Errorf("SizeOf = %d, 預期 150", got)
+	want := diskSize(t, dir) + diskSize(t, a) + diskSize(t, sub) + diskSize(t, b)
+	if got := SizeOf(dir); got != want {
+		t.Errorf("SizeOf = %d, 預期 %d", got, want)
+	}
+}
+
+func TestWalkHardlinkDedup(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a")
+	if err := os.WriteFile(a, make([]byte, 8192), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Link(a, filepath.Join(dir, "b")); err != nil {
+		t.Fatal(err)
+	}
+	// b 與 a 同 inode,只計一次
+	want := diskSize(t, dir) + diskSize(t, a)
+	size, _ := Walk(dir, nil)
+	if size != want {
+		t.Errorf("size = %d, 預期 %d(硬連結應只計一次)", size, want)
 	}
 }
 
@@ -122,13 +153,14 @@ func TestWalkLatestMtimeAndProgress(t *testing.T) {
 
 	prog := &Progress{}
 	size, latest := Walk(dir, prog)
-	if size != 30 {
-		t.Errorf("size = %d, 預期 30", size)
+	want := diskSize(t, dir) + diskSize(t, old) + diskSize(t, sub) + diskSize(t, fresh)
+	if size != want {
+		t.Errorf("size = %d, 預期 %d", size, want)
 	}
 	if time.Since(latest) > time.Hour {
 		t.Errorf("latest 應來自深層新檔案,實際 %v", latest)
 	}
-	if prog.Bytes() != 30 || prog.Files() != 2 {
-		t.Errorf("progress = %d bytes / %d files, 預期 30 / 2", prog.Bytes(), prog.Files())
+	if prog.Bytes() != want || prog.Files() != 2 {
+		t.Errorf("progress = %d bytes / %d files, 預期 %d / 2", prog.Bytes(), prog.Files(), want)
 	}
 }
