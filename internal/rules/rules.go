@@ -29,6 +29,7 @@ type Rule struct {
 	Requires    string   `yaml:"requires"`
 	Risk        string   `yaml:"risk"`
 	Root        bool     `yaml:"root"`
+	Expand      bool     `yaml:"expand"` // 掃描時把 paths 的子項攤開成獨立選項
 }
 
 var validRisks = map[string]bool{"low": true, "medium": true, "high": true}
@@ -81,6 +82,8 @@ func validate(r Rule) error {
 		return fmt.Errorf("規則 %s 的 risk 必須是 low/medium/high", r.ID)
 	case len(r.Paths) == 0 && r.Action == "":
 		return fmt.Errorf("規則 %s 必須提供 paths 或 action", r.ID)
+	case r.Expand && (len(r.Paths) == 0 || r.Action != ""):
+		return fmt.Errorf("規則 %s 的 expand 只能用於純 paths 規則", r.ID)
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package clean
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -82,12 +83,47 @@ func TestScanPathsWithExclude(t *testing.T) {
 		Paths:   []string{filepath.Join(dir, "*")},
 		Exclude: []string{keep},
 	}
-	targets, total := scanPaths(r, nil)
+	targets, sizes := scanPaths(r, nil)
 	if len(targets) != 1 || targets[0] != drop {
 		t.Errorf("exclude 應排除 keep,實際 targets = %v", targets)
 	}
-	if want := diskSize(t, drop); total != want {
-		t.Errorf("total = %d, 預期 %d(僅 drop)", total, want)
+	if want := diskSize(t, drop); len(sizes) != 1 || sizes[0] != want {
+		t.Errorf("sizes = %v, 預期 [%d](僅 drop)", sizes, want)
+	}
+}
+
+func TestExpandResults(t *testing.T) {
+	dir := t.TempDir()
+	// 10 個子目錄,大小遞增,驗證 top-8 個別列出 + 其餘 2 項合併
+	for i := 1; i <= 10; i++ {
+		sub := filepath.Join(dir, fmt.Sprintf("cache%02d", i))
+		if err := os.Mkdir(sub, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(sub, "f"), make([]byte, i*8192), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	r := rules.Rule{
+		ID: "t", Name: "快取", Risk: "low", Expand: true,
+		Paths: []string{filepath.Join(dir, "*")},
+	}
+	results := scanRule(r, nil)
+	if len(results) != 9 {
+		t.Fatalf("結果數 = %d, 預期 9(8 個別 + 1 合併)", len(results))
+	}
+	if results[0].Rule.Name != "快取 · cache10" {
+		t.Errorf("第一項應為最大的 cache10,實際 %s", results[0].Rule.Name)
+	}
+	last := results[8]
+	if last.Rule.Name != "快取 · 其餘 2 項" || len(last.Targets) != 2 {
+		t.Errorf("合併項錯誤: %s, targets=%v", last.Rule.Name, last.Targets)
+	}
+	for _, res := range results {
+		if !res.Known || res.Size == 0 || len(res.Targets) == 0 {
+			t.Errorf("每筆結果都應有大小與刪除目標: %+v", res)
+		}
 	}
 }
 

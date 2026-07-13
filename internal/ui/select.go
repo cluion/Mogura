@@ -47,6 +47,7 @@ type model struct {
 	title   string
 	items   []item
 	cursor  int
+	height  int
 	aborted bool
 }
 
@@ -56,7 +57,7 @@ func MultiSelect(title string, opts []Option) ([]Option, error) {
 	for i, o := range opts {
 		items[i] = item{opt: o}
 	}
-	final, err := tea.NewProgram(model{title: title, items: items}).Run()
+	final, err := tea.NewProgram(model{title: title, items: items, height: 24}).Run()
 	if err != nil {
 		return nil, fmt.Errorf("互動介面啟動失敗: %w", err)
 	}
@@ -76,6 +77,10 @@ func MultiSelect(title string, opts []Option) ([]Option, error) {
 func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if size, ok := msg.(tea.WindowSizeMsg); ok {
+		m.height = size.Height
+		return m, nil
+	}
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return m, nil
@@ -119,7 +124,22 @@ func (m model) View() string {
 		}
 	}
 
-	for i, it := range m.items {
+	// 視窗捲動:游標行加上描述行,保證永遠在可視範圍內
+	visible := m.height - 7
+	if visible < 5 {
+		visible = 5
+	}
+	start := 0
+	if m.cursor >= visible {
+		start = m.cursor - visible + 1
+	}
+	end := start + visible
+	if end > len(m.items) {
+		end = len(m.items)
+	}
+
+	for i := start; i < end; i++ {
+		it := m.items[i]
 		cursor := "  "
 		if i == m.cursor {
 			cursor = cursorStyle.Render("❯ ")

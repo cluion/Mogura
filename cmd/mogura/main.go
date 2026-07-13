@@ -100,9 +100,10 @@ func isTTY() bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
-// withProgress 在 fn 執行期間即時顯示掃描進度;非終端機時安靜執行。
+// withProgress 在 fn 執行期間即時顯示掃描進度;
+// stdout 不是終端機(如管線輸出)時安靜執行,避免 \r 汙染管線。
 func withProgress(label string, prog *clean.Progress, fn func()) {
-	if !isTTY() {
+	if fi, err := os.Stdout.Stat(); err != nil || fi.Mode()&os.ModeCharDevice == 0 {
 		fn()
 		return
 	}

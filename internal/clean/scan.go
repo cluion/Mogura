@@ -2,6 +2,8 @@
 package clean
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -23,9 +25,9 @@ type Result struct {
 }
 
 // ScanAll 平行掃描所有規則,結果依大小遞減排序(大小未知者排最後)。
-// prog 可為 nil;非 nil 時即時累計掃描進度。
+// expand 規則會攤開成多筆結果。prog 可為 nil;非 nil 時即時累計掃描進度。
 func ScanAll(rs []rules.Rule, prog *Progress) []Result {
-	results := make([]Result, len(rs))
+	perRule := make([][]Result, len(rs))
 	sem := make(chan struct{}, runtime.NumCPU())
 	var wg sync.WaitGroup
 	for i, r := range rs {
@@ -34,11 +36,15 @@ func ScanAll(rs []rules.Rule, prog *Progress) []Result {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			results[i] = scanRule(r, prog)
+			perRule[i] = scanRule(r, prog)
 		}(i, r)
 	}
 	wg.Wait()
 
+	var results []Result
+	for _, rs := range perRule {
+		results = append(results, rs...)
+	}
 	sort.SliceStable(results, func(a, b int) bool {
 		if results[a].Known != results[b].Known {
 			return results[a].Known
@@ -48,15 +54,24 @@ func ScanAll(rs []rules.Rule, prog *Progress) []Result {
 	return results
 }
 
-func scanRule(r rules.Rule, prog *Progress) Result {
+// expandTopN 是 expand 規則個別列出的子項數量,其餘打包成一項。
+const expandTopN = 8
+
+func scanRule(r rules.Rule, prog *Progress) []Result {
 	res := Result{Rule: r}
 	if len(r.Paths) > 0 {
-		targets, size := scanPaths(r, prog)
-		res.Size, res.Known = size, true
+		targets, sizes := scanPaths(r, prog)
+		if r.Expand && len(targets) > 0 {
+			return expandResults(r, targets, sizes)
+		}
+		for _, s := range sizes {
+			res.Size += s
+		}
+		res.Known = true
 		if r.Action == "" {
 			res.Targets = targets // 有 action 時 paths 僅用於估算大小
 		}
-		return res
+		return []Result{res}
 	}
 	if r.Probe != "" {
 		// Probe 來自 go:embed 的內建規則,非使用者輸入;若未來支援
@@ -69,10 +84,52 @@ func scanRule(r rules.Rule, prog *Progress) Result {
 			}
 		}
 	}
-	return res
+	return []Result{res}
 }
 
-func scanPaths(r rules.Rule, prog *Progress) (targets []string, total int64) {
+// expandResults 把子項依大小排序,前 expandTopN 名個別成列,其餘合併為一項。
+func expandResults(r rules.Rule, targets []string, sizes []int64) []Result {
+	idx := make([]int, len(targets))
+	for i := range idx {
+		idx[i] = i
+	}
+	sort.SliceStable(idx, func(a, b int) bool { return sizes[idx[a]] > sizes[idx[b]] })
+
+	var results []Result
+	for n, i := range idx {
+		if n >= expandTopN {
+			break
+		}
+		child := r
+		child.Name = r.Name + " · " + filepath.Base(targets[i])
+		child.Description = displayPath(targets[i])
+		results = append(results, Result{
+			Rule: child, Targets: []string{targets[i]}, Size: sizes[i], Known: true,
+		})
+	}
+	if rest := idx[min(expandTopN, len(idx)):]; len(rest) > 0 {
+		agg := r
+		agg.Name = fmt.Sprintf("%s · 其餘 %d 項", r.Name, len(rest))
+		var restTargets []string
+		var restSize int64
+		for _, i := range rest {
+			restTargets = append(restTargets, targets[i])
+			restSize += sizes[i]
+		}
+		results = append(results, Result{Rule: agg, Targets: restTargets, Size: restSize, Known: true})
+	}
+	return results
+}
+
+// displayPath 把家目錄縮寫成 ~,讓子項描述短一點。
+func displayPath(p string) string {
+	if home, err := os.UserHomeDir(); err == nil && strings.HasPrefix(p, home+"/") {
+		return "~" + strings.TrimPrefix(p, home)
+	}
+	return p
+}
+
+func scanPaths(r rules.Rule, prog *Progress) (targets []string, sizes []int64) {
 	excluded := map[string]bool{}
 	for _, ex := range r.Exclude {
 		matches, _ := filepath.Glob(rules.ExpandHome(ex))
@@ -88,10 +145,10 @@ func scanPaths(r rules.Rule, prog *Progress) (targets []string, total int64) {
 			}
 			targets = append(targets, m)
 			size, _ := Walk(m, prog)
-			total += size
+			sizes = append(sizes, size)
 		}
 	}
-	return targets, total
+	return targets, sizes
 }
 
 // Humanize 將位元組數轉為人類可讀格式。

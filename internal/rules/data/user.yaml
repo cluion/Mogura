@@ -6,6 +6,7 @@
     - "~/.cache/*"
   exclude:
     - "~/.cache/uv"
+  expand: true
   risk: low
 
 - id: uv-cache
