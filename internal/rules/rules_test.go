@@ -35,7 +35,7 @@ func TestValidate(t *testing.T) {
 		{"缺 name", Rule{ID: "a", Paths: []string{"~/x"}, Risk: "low"}, true},
 		{"risk 不合法", Rule{ID: "a", Name: "A", Paths: []string{"~/x"}, Risk: "危"}, true},
 		{"paths 與 action 皆空", Rule{ID: "a", Name: "A", Risk: "low"}, true},
-		{"paths 與 action 同時設定", Rule{ID: "a", Name: "A", Paths: []string{"~/x"}, Action: "true", Risk: "low"}, true},
+		{"paths 估算大小 + action 執行", Rule{ID: "a", Name: "A", Paths: []string{"~/x"}, Action: "true", Risk: "low"}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

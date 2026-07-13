@@ -12,7 +12,8 @@
   name: uv 套件快取
   description: uv 的 Python 套件快取,只清除未被任何環境使用的部分
   requires: uv
-  probe: "du -sb ~/.cache/uv 2>/dev/null | cut -f1"
+  paths:
+    - "~/.cache/uv"
   action: "uv cache prune"
   risk: low
 

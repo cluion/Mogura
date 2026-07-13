@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"mogura/internal/clean"
 )
@@ -97,6 +98,40 @@ func promptYes() bool {
 func isTTY() bool {
 	fi, err := os.Stdin.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}
+
+// withProgress 在 fn 執行期間即時顯示掃描進度;非終端機時安靜執行。
+func withProgress(label string, prog *clean.Progress, fn func()) {
+	if !isTTY() {
+		fn()
+		return
+	}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		fn()
+	}()
+	tick := time.NewTicker(100 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-done:
+			fmt.Print("\r\033[K") // 清掉進度列
+			return
+		case <-tick.C:
+			fmt.Printf("\r\033[K🦡 %s  已掃描 %s · %s 個檔案",
+				label, clean.Humanize(prog.Bytes()), groupDigits(prog.Files()))
+		}
+	}
+}
+
+// groupDigits 加上千分位,大數字才讀得出量級。
+func groupDigits(n int64) string {
+	s := fmt.Sprintf("%d", n)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
 }
 
 // confirmAndRun 對選定項目做最終確認、執行並逐項回報。

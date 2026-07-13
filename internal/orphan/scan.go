@@ -1,13 +1,12 @@
 package orphan
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
 	"time"
+
+	"mogura/internal/clean"
 )
 
 // Candidate 是一個找不到對應軟體的設定目錄,由使用者最終判斷是否刪除。
@@ -44,8 +43,8 @@ func DefaultBases() []string {
 	}
 }
 
-// ScanBases 找出 bases 下比對不到已安裝軟體的目錄。
-func ScanBases(bases []string, installed map[string]bool) []Candidate {
+// ScanBases 找出 bases 下比對不到已安裝軟體的目錄。prog 可為 nil。
+func ScanBases(bases []string, installed map[string]bool, prog *clean.Progress) []Candidate {
 	var cands []Candidate
 	for _, base := range bases {
 		entries, err := os.ReadDir(base)
@@ -64,7 +63,9 @@ func ScanBases(bases []string, installed map[string]bool) []Candidate {
 			cands = append(cands, Candidate{Path: path, Name: e.Name()})
 		}
 	}
-	fillStats(cands)
+	for i := range cands {
+		cands[i].Size, cands[i].ModTime = clean.Walk(cands[i].Path, prog)
+	}
 	return cands
 }
 
@@ -95,45 +96,6 @@ func isActive(name string, installed map[string]bool) bool {
 		}
 	}
 	return false
-}
-
-func fillStats(cands []Candidate) {
-	sem := make(chan struct{}, runtime.NumCPU())
-	var wg sync.WaitGroup
-	for i := range cands {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			cands[i].Size, cands[i].ModTime = walkStats(cands[i].Path)
-		}(i)
-	}
-	wg.Wait()
-}
-
-// walkStats 一趟走訪同時算總大小與整棵樹最新的 mtime,
-// 頂層目錄的 mtime 不會反映深層變動,必須看全樹才準。
-func walkStats(path string) (int64, time.Time) {
-	var total int64
-	var latest time.Time
-	filepath.WalkDir(path, func(_ string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		info, err := d.Info()
-		if err != nil {
-			return nil
-		}
-		if !d.IsDir() {
-			total += info.Size()
-		}
-		if info.ModTime().After(latest) {
-			latest = info.ModTime()
-		}
-		return nil
-	})
-	return total, latest
 }
 
 // IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1。

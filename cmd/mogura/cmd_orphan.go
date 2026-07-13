@@ -28,9 +28,13 @@ func runOrphan(args []string) error {
 		return fmt.Errorf("無法取得家目錄: %w", err)
 	}
 
-	fmt.Println("🦡 蒐集已安裝軟體清單並比對設定目錄...")
+	fmt.Println("🦡 蒐集已安裝軟體清單...")
 	sys := orphan.Detect()
-	cands := orphan.ScanBases(orphan.DefaultBases(), sys.Installed)
+	prog := &clean.Progress{}
+	var cands []orphan.Candidate
+	withProgress("比對設定目錄中...", prog, func() {
+		cands = orphan.ScanBases(orphan.DefaultBases(), sys.Installed, prog)
+	})
 	sort.SliceStable(cands, func(a, b int) bool { return cands[a].Size > cands[b].Size })
 
 	if len(cands) == 0 && len(sys.RemovedConfigs) == 0 {

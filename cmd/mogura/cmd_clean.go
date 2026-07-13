@@ -25,8 +25,11 @@ func runClean(args []string) error {
 		return err
 	}
 
-	fmt.Println("🦡 掃描中...")
-	results := clean.ScanAll(rs)
+	prog := &clean.Progress{}
+	var results []clean.Result
+	withProgress("掃描系統垃圾中...", prog, func() {
+		results = clean.ScanAll(rs, prog)
+	})
 
 	if listOnly || !isTTY() {
 		printCleanList(results)

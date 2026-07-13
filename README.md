@@ -34,10 +34,3 @@ mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
 CGO_ENABLED=0 go build -o mogura ./cmd/mogura
 go test -race ./...
 ```
-
-## 路線圖
-
-- [x] Phase 1:清理引擎 + Debian/Ubuntu 規則集 + 互動 TUI
-- [x] Phase 2:磁碟分析 + 開發垃圾掃描(node_modules、target、__pycache__)
-- [x] Phase 3:孤兒設定檔掃描(已移除套件 ↔ ~/.config 殘留比對)
-- [x] Phase 4:系統監控、記憶體釋放、GoReleaser 發布 + 一鍵安裝

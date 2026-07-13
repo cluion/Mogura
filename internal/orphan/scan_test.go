@@ -55,7 +55,7 @@ func TestScanBases(t *testing.T) {
 		t.Fatal(err) // 檔案不列入掃描
 	}
 
-	cands := ScanBases([]string{base}, installed)
+	cands := ScanBases([]string{base}, installed, nil)
 	if len(cands) != 1 {
 		t.Fatalf("孤兒數 = %d, 預期 1(%+v)", len(cands), cands)
 	}

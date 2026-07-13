@@ -6,9 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"mogura/internal/clean"
@@ -41,8 +39,8 @@ type Junk struct {
 }
 
 // Scan 從 root 向下找建置產物。隱藏目錄(除了產物本身)一律跳過,
-// 找到的產物目錄不再深入。
-func Scan(root string) ([]Junk, error) {
+// 找到的產物目錄不再深入。prog 可為 nil。
+func Scan(root string, prog *clean.Progress) ([]Junk, error) {
 	var junks []Junk
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -52,11 +50,7 @@ func Scan(root string) ([]Junk, error) {
 			return nil
 		}
 		if k, ok := match(path, d.Name()); ok {
-			mtime := time.Time{}
-			if info, err := d.Info(); err == nil {
-				mtime = info.ModTime()
-			}
-			junks = append(junks, Junk{Path: path, Kind: k, ModTime: mtime})
+			junks = append(junks, Junk{Path: path, Kind: k})
 			return filepath.SkipDir
 		}
 		if strings.HasPrefix(d.Name(), ".") {
@@ -68,7 +62,9 @@ func Scan(root string) ([]Junk, error) {
 		return nil, err
 	}
 
-	fillSizes(junks)
+	for i := range junks {
+		junks[i].Size, junks[i].ModTime = clean.Walk(junks[i].Path, prog)
+	}
 	return junks, nil
 }
 
@@ -85,21 +81,6 @@ func match(path, name string) (Kind, bool) {
 		}
 	}
 	return Kind{}, false
-}
-
-func fillSizes(junks []Junk) {
-	sem := make(chan struct{}, runtime.NumCPU())
-	var wg sync.WaitGroup
-	for i := range junks {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			junks[i].Size = clean.SizeOf(junks[i].Path)
-		}(i)
-	}
-	wg.Wait()
 }
 
 // IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1。

@@ -37,7 +37,7 @@ func TestScan(t *testing.T) {
 	hidden := filepath.Join(root, ".hidden", "node_modules")
 	mkdirWithFile(t, hidden, filepath.Join(root, ".hidden", "package.json"))
 
-	junks, err := Scan(root)
+	junks, err := Scan(root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestScanSkipsInsideJunk(t *testing.T) {
 	inner := filepath.Join(outer, "pkg", "node_modules")
 	mkdirWithFile(t, inner, filepath.Join(outer, "pkg", "package.json"))
 
-	junks, err := Scan(root)
+	junks, err := Scan(root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

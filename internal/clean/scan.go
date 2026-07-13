@@ -2,8 +2,6 @@
 package clean
 
 import (
-	"io/fs"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -25,7 +23,8 @@ type Result struct {
 }
 
 // ScanAll 平行掃描所有規則,結果依大小遞減排序(大小未知者排最後)。
-func ScanAll(rs []rules.Rule) []Result {
+// prog 可為 nil;非 nil 時即時累計掃描進度。
+func ScanAll(rs []rules.Rule, prog *Progress) []Result {
 	results := make([]Result, len(rs))
 	sem := make(chan struct{}, runtime.NumCPU())
 	var wg sync.WaitGroup
@@ -35,7 +34,7 @@ func ScanAll(rs []rules.Rule) []Result {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			results[i] = scanRule(r)
+			results[i] = scanRule(r, prog)
 		}(i, r)
 	}
 	wg.Wait()
@@ -49,11 +48,14 @@ func ScanAll(rs []rules.Rule) []Result {
 	return results
 }
 
-func scanRule(r rules.Rule) Result {
+func scanRule(r rules.Rule, prog *Progress) Result {
 	res := Result{Rule: r}
 	if len(r.Paths) > 0 {
-		res.Targets, res.Size = scanPaths(r)
-		res.Known = true
+		targets, size := scanPaths(r, prog)
+		res.Size, res.Known = size, true
+		if r.Action == "" {
+			res.Targets = targets // 有 action 時 paths 僅用於估算大小
+		}
 		return res
 	}
 	if r.Probe != "" {
@@ -70,7 +72,7 @@ func scanRule(r rules.Rule) Result {
 	return res
 }
 
-func scanPaths(r rules.Rule) (targets []string, total int64) {
+func scanPaths(r rules.Rule, prog *Progress) (targets []string, total int64) {
 	excluded := map[string]bool{}
 	for _, ex := range r.Exclude {
 		matches, _ := filepath.Glob(rules.ExpandHome(ex))
@@ -85,32 +87,11 @@ func scanPaths(r rules.Rule) (targets []string, total int64) {
 				continue
 			}
 			targets = append(targets, m)
-			total += SizeOf(m)
+			size, _ := Walk(m, prog)
+			total += size
 		}
 	}
 	return targets, total
-}
-
-// SizeOf 計算檔案或目錄的總大小,不追蹤 symlink,忽略無權限的子項。
-func SizeOf(path string) int64 {
-	info, err := os.Lstat(path)
-	if err != nil {
-		return 0
-	}
-	if !info.IsDir() {
-		return info.Size()
-	}
-	var total int64
-	filepath.WalkDir(path, func(_ string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil // 無權限等錯誤直接略過該項
-		}
-		if fi, err := d.Info(); err == nil && !d.IsDir() {
-			total += fi.Size()
-		}
-		return nil
-	})
-	return total
 }
 
 // Humanize 將位元組數轉為人類可讀格式。

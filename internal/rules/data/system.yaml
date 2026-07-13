@@ -3,7 +3,8 @@
   name: APT 套件快取
   description: 已下載的 .deb 安裝檔,需要時會重新下載
   requires: apt-get
-  probe: "du -sb /var/cache/apt/archives 2>/dev/null | cut -f1"
+  paths:
+    - "/var/cache/apt/archives"
   action: "apt-get clean"
   risk: low
   root: true
@@ -12,7 +13,8 @@
   name: systemd 日誌
   description: 清除 7 天以前的 journal 日誌
   requires: journalctl
-  probe: "du -sb /var/log/journal 2>/dev/null | cut -f1"
+  paths:
+    - "/var/log/journal"
   action: "journalctl --vacuum-time=7d"
   risk: low
   root: true
@@ -20,7 +22,8 @@
 - id: crash-reports
   name: 當機報告
   description: /var/crash 中 apport 產生的當機傾印
-  probe: "du -sb /var/crash 2>/dev/null | cut -f1"
+  paths:
+    - "/var/crash"
   action: "rm -rf /var/crash/*"
   risk: low
   root: true

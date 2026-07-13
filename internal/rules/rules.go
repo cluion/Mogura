@@ -16,8 +16,8 @@ import (
 //go:embed data/*.yaml
 var dataFS embed.FS
 
-// Rule 是一條清理規則。Paths 與 Action 二選一:
-// Paths 走內建的掃描+刪除;Action 交給外部指令執行,搭配 Probe 估算大小。
+// Rule 是一條清理規則。只有 Paths 時走內建的掃描+刪除;
+// 有 Action 時交給外部指令執行,大小用 Paths(內建平行掃描)或 Probe 估算。
 type Rule struct {
 	ID          string   `yaml:"id"`
 	Name        string   `yaml:"name"`
@@ -81,8 +81,6 @@ func validate(r Rule) error {
 		return fmt.Errorf("規則 %s 的 risk 必須是 low/medium/high", r.ID)
 	case len(r.Paths) == 0 && r.Action == "":
 		return fmt.Errorf("規則 %s 必須提供 paths 或 action", r.ID)
-	case len(r.Paths) > 0 && r.Action != "":
-		return fmt.Errorf("規則 %s 的 paths 與 action 不可同時設定", r.ID)
 	}
 	return nil
 }

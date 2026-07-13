@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"mogura/internal/rules"
 )
@@ -70,7 +71,7 @@ func TestScanPathsWithExclude(t *testing.T) {
 		Paths:   []string{filepath.Join(dir, "*")},
 		Exclude: []string{keep},
 	}
-	targets, total := scanPaths(r)
+	targets, total := scanPaths(r, nil)
 	if len(targets) != 1 || targets[0] != drop {
 		t.Errorf("exclude 應排除 keep,實際 targets = %v", targets)
 	}
@@ -93,5 +94,41 @@ func TestSizeOfDirectory(t *testing.T) {
 	}
 	if got := SizeOf(dir); got != 150 {
 		t.Errorf("SizeOf = %d, 預期 150", got)
+	}
+}
+
+func TestWalkLatestMtimeAndProgress(t *testing.T) {
+	dir := t.TempDir()
+	old := filepath.Join(dir, "old")
+	if err := os.WriteFile(old, make([]byte, 10), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().Add(-100 * 24 * time.Hour)
+	if err := os.Chtimes(old, past, past); err != nil {
+		t.Fatal(err)
+	}
+	sub := filepath.Join(dir, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fresh := filepath.Join(sub, "fresh")
+	if err := os.WriteFile(fresh, make([]byte, 20), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// 頂層目錄設成舊時間,驗證 latest 來自深層檔案而非頂層
+	if err := os.Chtimes(dir, past, past); err != nil {
+		t.Fatal(err)
+	}
+
+	prog := &Progress{}
+	size, latest := Walk(dir, prog)
+	if size != 30 {
+		t.Errorf("size = %d, 預期 30", size)
+	}
+	if time.Since(latest) > time.Hour {
+		t.Errorf("latest 應來自深層新檔案,實際 %v", latest)
+	}
+	if prog.Bytes() != 30 || prog.Files() != 2 {
+		t.Errorf("progress = %d bytes / %d files, 預期 30 / 2", prog.Bytes(), prog.Files())
 	}
 }

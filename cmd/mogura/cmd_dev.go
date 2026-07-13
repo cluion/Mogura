@@ -36,10 +36,14 @@ func runDev(args []string) error {
 		return fmt.Errorf("dev 掃描僅支援家目錄內的路徑: %s", root)
 	}
 
-	fmt.Printf("🦡 掃描 %s 的建置產物中...\n", abs)
-	junks, err := devjunk.Scan(abs)
-	if err != nil {
-		return err
+	prog := &clean.Progress{}
+	var junks []devjunk.Junk
+	var scanErr error
+	withProgress(fmt.Sprintf("掃描 %s 的建置產物中...", abs), prog, func() {
+		junks, scanErr = devjunk.Scan(abs, prog)
+	})
+	if scanErr != nil {
+		return scanErr
 	}
 	if len(junks) == 0 {
 		fmt.Println("沒有找到建置產物,很乾淨!")
