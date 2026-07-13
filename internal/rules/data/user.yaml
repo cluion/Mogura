@@ -1,0 +1,29 @@
+# 使用者層清理規則 — 不需要 root
+- id: xdg-cache
+  name: 使用者快取
+  description: ~/.cache 下的應用程式快取,刪除後會自動重建
+  paths:
+    - "~/.cache/*"
+  risk: low
+
+- id: trash
+  name: 垃圾桶
+  description: 垃圾桶中的檔案,清空後無法復原
+  paths:
+    - "~/.local/share/Trash/files/*"
+    - "~/.local/share/Trash/info/*"
+  risk: medium
+
+- id: npm-cache
+  name: npm 快取
+  description: npm 下載快取,需要時會重新下載
+  paths:
+    - "~/.npm/_cacache/*"
+  risk: low
+
+- id: flatpak-unused
+  name: Flatpak 未使用的 runtime
+  description: 已無應用程式依賴的 Flatpak runtime
+  requires: flatpak
+  action: "flatpak uninstall --unused -y"
+  risk: low

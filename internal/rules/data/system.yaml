@@ -1,0 +1,34 @@
+# 系統層清理規則 — 需要 sudo
+- id: apt-cache
+  name: APT 套件快取
+  description: 已下載的 .deb 安裝檔,需要時會重新下載
+  requires: apt-get
+  probe: "du -sb /var/cache/apt/archives 2>/dev/null | cut -f1"
+  action: "apt-get clean"
+  risk: low
+  root: true
+
+- id: journal-logs
+  name: systemd 日誌
+  description: 清除 7 天以前的 journal 日誌
+  requires: journalctl
+  probe: "du -sb /var/log/journal 2>/dev/null | cut -f1"
+  action: "journalctl --vacuum-time=7d"
+  risk: low
+  root: true
+
+- id: crash-reports
+  name: 當機報告
+  description: /var/crash 中 apport 產生的當機傾印
+  probe: "du -sb /var/crash 2>/dev/null | cut -f1"
+  action: "rm -rf /var/crash/*"
+  risk: low
+  root: true
+
+- id: snap-old-revisions
+  name: Snap 舊版本
+  description: snap 保留的已停用舊版本,目前使用的版本不受影響
+  requires: snap
+  action: 'snap list --all | awk ''/disabled/{print $1, $3}'' | while read -r n r; do snap remove "$n" --revision="$r"; done'
+  risk: low
+  root: true
