@@ -54,39 +54,11 @@ func runClean(args []string) error {
 		return nil
 	}
 
-	var (
-		picked   []clean.Result
-		labels   []string
-		sizes    []int64
-		needRoot bool
-	)
+	var picked []clean.Result
 	for _, o := range selected {
-		r := o.Value.(clean.Result)
-		picked = append(picked, r)
-		labels = append(labels, r.Rule.Name)
-		if r.Known {
-			sizes = append(sizes, r.Size)
-		} else {
-			sizes = append(sizes, -1)
-		}
-		needRoot = needRoot || r.Rule.Root
+		picked = append(picked, o.Value.(clean.Result))
 	}
-	if !confirm(labels, sizes, needRoot) {
-		fmt.Println("已取消。")
-		return nil
-	}
-
-	freed, outcomes := clean.Execute(picked)
-	fmt.Println()
-	for _, o := range outcomes {
-		if o.Err != nil {
-			fmt.Printf("  ✗ %s — %s\n", o.Result.Rule.Name, o.Err)
-		} else {
-			fmt.Printf("  ✓ %s\n", o.Result.Rule.Name)
-		}
-	}
-	fmt.Printf("\n✨ 完成,共釋放約 %s\n", clean.Humanize(freed))
-	return nil
+	return confirmAndRun(picked)
 }
 
 func printCleanList(results []clean.Result) {

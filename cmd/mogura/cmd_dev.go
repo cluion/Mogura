@@ -56,7 +56,7 @@ func runDev(args []string) error {
 	for i, j := range junks {
 		opts[i] = ui.Option{
 			Label: relPath(j.Path, home),
-			Desc:  fmt.Sprintf("%s · %s", j.Kind.Label, idleLabel(j)),
+			Desc:  fmt.Sprintf("%s · %s", j.Kind.Label, idleDaysLabel(j.IdleDays())),
 			Size:  j.Size,
 			Known: true,
 			Risk:  j.Kind.Risk,
@@ -72,11 +72,7 @@ func runDev(args []string) error {
 		return nil
 	}
 
-	var (
-		picked []clean.Result
-		labels []string
-		sizes  []int64
-	)
+	var picked []clean.Result
 	for _, o := range selected {
 		j := o.Value.(devjunk.Junk)
 		picked = append(picked, clean.Result{
@@ -85,32 +81,15 @@ func runDev(args []string) error {
 			Size:    j.Size,
 			Known:   true,
 		})
-		labels = append(labels, relPath(j.Path, home))
-		sizes = append(sizes, j.Size)
 	}
-	if !confirm(labels, sizes, false) {
-		fmt.Println("已取消。")
-		return nil
-	}
-
-	freed, outcomes := clean.Execute(picked)
-	fmt.Println()
-	for _, o := range outcomes {
-		if o.Err != nil {
-			fmt.Printf("  ✗ %s — %s\n", o.Result.Rule.Name, o.Err)
-		} else {
-			fmt.Printf("  ✓ %s\n", o.Result.Rule.Name)
-		}
-	}
-	fmt.Printf("\n✨ 完成,共釋放約 %s\n", clean.Humanize(freed))
-	return nil
+	return confirmAndRun(picked)
 }
 
 func printDevList(junks []devjunk.Junk, home string) {
 	var total int64
 	for _, j := range junks {
 		fmt.Printf("  %10s  %-8s %-12s %s\n",
-			clean.Humanize(j.Size), j.Kind.Label, idleLabel(j), relPath(j.Path, home))
+			clean.Humanize(j.Size), j.Kind.Label, idleDaysLabel(j.IdleDays()), relPath(j.Path, home))
 		total += j.Size
 	}
 	fmt.Printf("\n合計可回收: %s\n", clean.Humanize(total))
@@ -121,15 +100,4 @@ func relPath(path, home string) string {
 		return "~/" + rel
 	}
 	return path
-}
-
-func idleLabel(j devjunk.Junk) string {
-	days := j.IdleDays()
-	if days < 0 {
-		return "未知"
-	}
-	if days == 0 {
-		return "今天有動"
-	}
-	return fmt.Sprintf("閒置 %d 天", days)
 }

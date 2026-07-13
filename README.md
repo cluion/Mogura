@@ -11,6 +11,7 @@ mogura              # 掃描 + 互動選擇 + 清理
 mogura clean --list # 只列出可回收空間,不清理
 mogura analyze [路徑] # 磁碟空間分析,互動瀏覽各目錄佔用
 mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
+mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
 ```
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
@@ -28,5 +29,5 @@ go test ./...
 
 - [x] Phase 1:清理引擎 + Debian/Ubuntu 規則集 + 互動 TUI
 - [x] Phase 2:磁碟分析 + 開發垃圾掃描(node_modules、target、__pycache__)
-- [ ] Phase 3:孤兒設定檔掃描(已移除套件 ↔ ~/.config 殘留比對)
+- [x] Phase 3:孤兒設定檔掃描(已移除套件 ↔ ~/.config 殘留比對)
 - [ ] Phase 4:系統監控、記憶體釋放、GoReleaser 發布 + 一鍵安裝

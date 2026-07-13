@@ -4,6 +4,16 @@
   description: ~/.cache 下的應用程式快取,刪除後會自動重建
   paths:
     - "~/.cache/*"
+  exclude:
+    - "~/.cache/uv"
+  risk: low
+
+- id: uv-cache
+  name: uv 套件快取
+  description: uv 的 Python 套件快取,只清除未被任何環境使用的部分
+  requires: uv
+  probe: "du -sb ~/.cache/uv 2>/dev/null | cut -f1"
+  action: "uv cache prune"
   risk: low
 
 - id: trash
