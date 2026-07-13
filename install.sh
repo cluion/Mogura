@@ -1,10 +1,9 @@
 #!/usr/bin/env sh
 # Mogura 一鍵安裝:抓取最新 release 的靜態 binary 放進 ~/.local/bin
-# 用法: curl -fsSL https://raw.githubusercontent.com/<REPO>/main/install.sh | sh
+# 用法: curl -fsSL https://raw.githubusercontent.com/cluion/Mogura/main/install.sh | sh
 set -eu
 
-# TODO: 建立 GitHub repo 後改成正式的 <owner>/<repo>
-REPO="${MOGURA_REPO:-OWNER/mogura}"
+REPO="${MOGURA_REPO:-cluion/Mogura}"
 INSTALL_DIR="${MOGURA_INSTALL_DIR:-$HOME/.local/bin}"
 
 case "$(uname -m)" in

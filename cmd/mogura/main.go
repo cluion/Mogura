@@ -10,7 +10,8 @@ import (
 	"mogura/internal/clean"
 )
 
-var version = "0.4.0-dev"
+// 正式版本由 GoReleaser 以 ldflags 注入
+var version = "dev"
 
 func main() {
 	args := os.Args[1:]
