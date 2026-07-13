@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 
 	"mogura/internal/clean"
@@ -55,6 +56,24 @@ func (s *Sizer) List(dir string) ([]Entry, error) {
 		return entries[a].Size > entries[b].Size
 	})
 	return entries, nil
+}
+
+// Invalidate 移除 path 本身、其子孫與所有祖先的快取(刪除後大小全變了)。
+func (s *Sizer) Invalidate(path string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	prefix := path + string(filepath.Separator)
+	for k := range s.cache {
+		if k == path || strings.HasPrefix(k, prefix) {
+			delete(s.cache, k)
+		}
+	}
+	for p := filepath.Dir(path); ; p = filepath.Dir(p) {
+		delete(s.cache, p)
+		if p == filepath.Dir(p) {
+			break
+		}
+	}
 }
 
 func (s *Sizer) size(path string) int64 {

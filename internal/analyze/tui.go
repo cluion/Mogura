@@ -1,7 +1,9 @@
 package analyze
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,12 +24,19 @@ var (
 	barBgStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
 	dirStyle    = lipgloss.NewStyle().Bold(true)
 	helpStyle   = lipgloss.NewStyle().Faint(true).MarginTop(1)
+	dangerLine  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("196"))
+	okLine      = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 )
 
 type loadedMsg struct {
 	dir     string
 	entries []Entry
 	err     error
+}
+
+type deletedMsg struct {
+	entry Entry
+	err   error
 }
 
 type browser struct {
@@ -39,6 +48,10 @@ type browser struct {
 	loading bool
 	errMsg  string
 	height  int
+
+	confirm  *Entry // 非 nil 時處於刪除確認狀態
+	deleting bool
+	status   string
 }
 
 // Browse 啟動磁碟分析瀏覽器,從 root 開始向下鑽。
@@ -55,6 +68,29 @@ func (b browser) load(dir string) tea.Cmd {
 	}
 }
 
+func deleteEntry(e Entry) tea.Cmd {
+	return func() tea.Msg {
+		if err := deleteGuard(e.Path); err != nil {
+			return deletedMsg{entry: e, err: err}
+		}
+		return deletedMsg{entry: e, err: os.RemoveAll(e.Path)}
+	}
+}
+
+// deleteGuard 是 TUI 刪除的防呆:擋根目錄、第一層系統目錄與家目錄本身。
+func deleteGuard(path string) error {
+	if !filepath.IsAbs(path) || path == "/" {
+		return errors.New("拒絕刪除")
+	}
+	if strings.Count(path, "/") < 2 {
+		return errors.New("拒絕刪除第一層系統目錄")
+	}
+	if home, err := os.UserHomeDir(); err == nil && filepath.Clean(path) == filepath.Clean(home) {
+		return errors.New("拒絕刪除家目錄")
+	}
+	return nil
+}
+
 func (b browser) Init() tea.Cmd { return b.load(b.cwd) }
 
 func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -68,12 +104,27 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			b.loading = false
 			return b, nil
 		}
+		if msg.dir != b.cwd {
+			b.cursor = 0 // 換目錄回到頂端;原地刷新(如刪除後)保留游標
+		}
 		b.cwd = msg.dir
 		b.entries = msg.entries
-		b.cursor = 0
+		if b.cursor >= len(b.entries) {
+			b.cursor = 0
+		}
 		b.loading = false
 		b.errMsg = ""
 		return b, nil
+	case deletedMsg:
+		b.deleting = false
+		if msg.err != nil {
+			b.status = dangerLine.Render("刪除失敗:" + msg.err.Error())
+			return b, nil
+		}
+		b.status = okLine.Render(fmt.Sprintf("已刪除 %s,釋放 %s", msg.entry.Name, clean.Humanize(msg.entry.Size)))
+		b.sizer.Invalidate(msg.entry.Path)
+		b.loading = true
+		return b, b.load(b.cwd)
 	case tea.KeyMsg:
 		return b.handleKey(msg)
 	}
@@ -81,6 +132,19 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// 刪除確認狀態:只接受 y / 其他鍵取消
+	if b.confirm != nil {
+		target := *b.confirm
+		b.confirm = nil
+		if key.String() == "y" {
+			b.deleting = true
+			b.status = ""
+			return b, deleteEntry(target)
+		}
+		b.status = "已取消刪除。"
+		return b, nil
+	}
+
 	switch key.String() {
 	case "q", "esc", "ctrl+c":
 		return b, tea.Quit
@@ -94,13 +158,20 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter", "right", "l":
 		if !b.loading && b.cursor < len(b.entries) && b.entries[b.cursor].IsDir {
+			target := b.entries[b.cursor].Path
 			b.loading = true
-			return b, b.load(b.entries[b.cursor].Path)
+			return b, b.load(target)
 		}
 	case "backspace", "left", "h":
 		if !b.loading && b.cwd != b.root {
 			b.loading = true
 			return b, b.load(filepath.Dir(b.cwd))
+		}
+	case "d":
+		if !b.loading && !b.deleting && b.cursor < len(b.entries) {
+			e := b.entries[b.cursor]
+			b.confirm = &e
+			b.status = ""
 		}
 	}
 	return b, nil
@@ -125,7 +196,7 @@ func (b browser) View() string {
 		max = b.entries[0].Size
 	}
 
-	visible := b.height - 6
+	visible := b.height - 7
 	if visible < 5 {
 		visible = 5
 	}
@@ -157,6 +228,16 @@ func (b browser) View() string {
 		sb.WriteString(pathStyle.Render("(空目錄)") + "\n")
 	}
 
-	sb.WriteString(helpStyle.Render("enter 進入 · backspace 上層 · q 離開"))
+	switch {
+	case b.confirm != nil:
+		sb.WriteString("\n" + dangerLine.Render(fmt.Sprintf("刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消",
+			b.confirm.Name, clean.Humanize(b.confirm.Size))))
+	case b.deleting:
+		sb.WriteString("\n刪除中...")
+	case b.status != "":
+		sb.WriteString("\n" + b.status)
+	}
+
+	sb.WriteString(helpStyle.Render("\nenter 進入 · backspace 上層 · d 刪除 · q 離開"))
 	return sb.String()
 }
