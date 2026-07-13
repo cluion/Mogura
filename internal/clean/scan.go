@@ -85,14 +85,14 @@ func scanPaths(r rules.Rule) (targets []string, total int64) {
 				continue
 			}
 			targets = append(targets, m)
-			total += sizeOf(m)
+			total += SizeOf(m)
 		}
 	}
 	return targets, total
 }
 
-// sizeOf 計算檔案或目錄的總大小,不追蹤 symlink,忽略無權限的子項。
-func sizeOf(path string) int64 {
+// SizeOf 計算檔案或目錄的總大小,不追蹤 symlink,忽略無權限的子項。
+func SizeOf(path string) int64 {
 	info, err := os.Lstat(path)
 	if err != nil {
 		return 0

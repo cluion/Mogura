@@ -24,27 +24,39 @@ var (
 		"medium": lipgloss.NewStyle().Foreground(lipgloss.Color("214")),
 		"high":   lipgloss.NewStyle().Foreground(lipgloss.Color("196")),
 	}
-	riskLabels = map[string]string{"low": "低", "medium": "中", "high": "高"}
+	riskLabels = map[string]string{"low": "風險低", "medium": "風險中", "high": "風險高"}
 )
 
+// Option 是多選清單中的一個項目,Value 由呼叫端夾帶原始資料。
+type Option struct {
+	Label string
+	Desc  string
+	Size  int64
+	Known bool
+	Risk  string // low/medium/high,空字串不顯示
+	Root  bool
+	Value any
+}
+
 type item struct {
-	res      clean.Result
+	opt      Option
 	selected bool
 }
 
 type model struct {
+	title   string
 	items   []item
 	cursor  int
 	aborted bool
 }
 
-// Select 顯示互動多選清單,回傳使用者勾選的項目;取消時回傳 nil。
-func Select(results []clean.Result) ([]clean.Result, error) {
-	items := make([]item, len(results))
-	for i, r := range results {
-		items[i] = item{res: r}
+// MultiSelect 顯示互動多選清單,回傳使用者勾選的項目;取消時回傳 nil。
+func MultiSelect(title string, opts []Option) ([]Option, error) {
+	items := make([]item, len(opts))
+	for i, o := range opts {
+		items[i] = item{opt: o}
 	}
-	final, err := tea.NewProgram(model{items: items}).Run()
+	final, err := tea.NewProgram(model{title: title, items: items}).Run()
 	if err != nil {
 		return nil, fmt.Errorf("互動介面啟動失敗: %w", err)
 	}
@@ -52,10 +64,10 @@ func Select(results []clean.Result) ([]clean.Result, error) {
 	if m.aborted {
 		return nil, nil
 	}
-	var selected []clean.Result
+	var selected []Option
 	for _, it := range m.items {
 		if it.selected {
-			selected = append(selected, it.res)
+			selected = append(selected, it.opt)
 		}
 	}
 	return selected, nil
@@ -98,12 +110,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("🦡 Mogura — 選擇要清理的項目") + "\n\n")
+	b.WriteString(titleStyle.Render("🦡 "+m.title) + "\n\n")
 
 	var total int64
 	for _, it := range m.items {
-		if it.selected && it.res.Known {
-			total += it.res.Size
+		if it.selected && it.opt.Known {
+			total += it.opt.Size
 		}
 	}
 
@@ -117,18 +129,21 @@ func (m model) View() string {
 			check = cursorStyle.Render("[✓]")
 		}
 		size := "—"
-		if it.res.Known {
-			size = clean.Humanize(it.res.Size)
+		if it.opt.Known {
+			size = clean.Humanize(it.opt.Size)
 		}
-		risk := riskStyles[it.res.Rule.Risk].Render("風險" + riskLabels[it.res.Rule.Risk])
+		risk := ""
+		if it.opt.Risk != "" {
+			risk = riskStyles[it.opt.Risk].Render(riskLabels[it.opt.Risk]) + " "
+		}
 		lock := "  "
-		if it.res.Rule.Root {
+		if it.opt.Root {
 			lock = "🔒"
 		}
-		b.WriteString(fmt.Sprintf("%s%s %s %s %s %s\n",
-			cursor, check, sizeStyle.Render(size), risk, lock, it.res.Rule.Name))
-		if i == m.cursor {
-			b.WriteString("        " + descStyle.Render(it.res.Rule.Description) + "\n")
+		b.WriteString(fmt.Sprintf("%s%s %s %s%s %s\n",
+			cursor, check, sizeStyle.Render(size), risk, lock, it.opt.Label))
+		if i == m.cursor && it.opt.Desc != "" {
+			b.WriteString("        " + descStyle.Render(it.opt.Desc) + "\n")
 		}
 	}
 

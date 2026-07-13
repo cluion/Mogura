@@ -7,14 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/term"
-
 	"mogura/internal/clean"
-	"mogura/internal/rules"
-	"mogura/internal/ui"
 )
 
-var version = "0.1.0-dev"
+var version = "0.2.0-dev"
 
 func main() {
 	args := os.Args[1:]
@@ -23,17 +19,23 @@ func main() {
 		cmd, args = args[0], args[1:]
 	}
 
+	var err error
 	switch cmd {
 	case "clean":
-		if err := runClean(args); err != nil {
-			fmt.Fprintln(os.Stderr, "錯誤:", err)
-			os.Exit(1)
-		}
+		err = runClean(args)
+	case "analyze":
+		err = runAnalyze(args)
+	case "dev":
+		err = runDev(args)
 	case "version":
 		fmt.Println("mogura", version)
 	default:
 		usage()
 		os.Exit(2)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "錯誤:", err)
+		os.Exit(1)
 	}
 }
 
@@ -42,95 +44,26 @@ func usage() {
 
 指令:
   clean      掃描並清理系統垃圾(預設)
+  analyze    磁碟空間分析,互動瀏覽各目錄佔用
+  dev        掃描開發專案的建置產物(node_modules、target、vendor...)
   version    顯示版本
 
-clean 選項:
-  --list     只列出掃描結果,不進入互動清理`)
+選項:
+  --list         只列出結果,不進入互動清理(clean、dev)
+  [路徑]         analyze 與 dev 的起始目錄,預設為家目錄`)
 }
 
-func runClean(args []string) error {
-	listOnly := false
-	for _, a := range args {
-		switch a {
-		case "--list":
-			listOnly = true
-		default:
-			usage()
-			return fmt.Errorf("未知選項: %s", a)
-		}
-	}
-
-	rs, err := rules.Load()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("🦡 掃描中...")
-	results := clean.ScanAll(rs)
-
-	if listOnly || !term.IsTerminal(int(os.Stdin.Fd())) {
-		printList(results)
-		return nil
-	}
-
-	selected, err := ui.Select(results)
-	if err != nil {
-		return err
-	}
-	if len(selected) == 0 {
-		fmt.Println("未選擇任何項目,結束。")
-		return nil
-	}
-
-	if !confirm(selected) {
-		fmt.Println("已取消。")
-		return nil
-	}
-
-	freed, outcomes := clean.Execute(selected)
-	fmt.Println()
-	for _, o := range outcomes {
-		if o.Err != nil {
-			fmt.Printf("  ✗ %s — %s\n", o.Result.Rule.Name, o.Err)
-		} else {
-			fmt.Printf("  ✓ %s\n", o.Result.Rule.Name)
-		}
-	}
-	fmt.Printf("\n✨ 完成,共釋放約 %s\n", clean.Humanize(freed))
-	return nil
-}
-
-func printList(results []clean.Result) {
+// confirm 顯示選定項目摘要並要求使用者確認。
+func confirm(labels []string, sizes []int64, needRoot bool) bool {
 	var total int64
-	for _, r := range results {
-		size := "—"
-		if r.Known {
-			size = clean.Humanize(r.Size)
-			total += r.Size
-		}
-		root := " "
-		if r.Rule.Root {
-			root = "🔒"
-		}
-		fmt.Printf("  %10s  %s %-24s %s\n", size, root, r.Rule.Name, r.Rule.Description)
-	}
-	fmt.Printf("\n合計可回收(可估算項目): %s\n", clean.Humanize(total))
-}
-
-func confirm(selected []clean.Result) bool {
-	var total int64
-	needRoot := false
 	fmt.Println("\n將清理以下項目:")
-	for _, r := range selected {
+	for i, label := range labels {
 		size := "—"
-		if r.Known {
-			size = clean.Humanize(r.Size)
-			total += r.Size
+		if sizes[i] >= 0 {
+			size = clean.Humanize(sizes[i])
+			total += sizes[i]
 		}
-		fmt.Printf("  · %s(%s)\n", r.Rule.Name, size)
-		if r.Rule.Root {
-			needRoot = true
-		}
+		fmt.Printf("  · %s(%s)\n", label, size)
 	}
 	fmt.Printf("預估釋放: %s\n", clean.Humanize(total))
 	if needRoot {
@@ -140,4 +73,9 @@ func confirm(selected []clean.Result) bool {
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	answer := strings.ToLower(strings.TrimSpace(line))
 	return answer == "y" || answer == "yes"
+}
+
+func isTTY() bool {
+	fi, err := os.Stdin.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }

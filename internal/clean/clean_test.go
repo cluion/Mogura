@@ -91,7 +91,7 @@ func TestSizeOfDirectory(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(sub, "b"), make([]byte, 50), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := sizeOf(dir); got != 150 {
-		t.Errorf("sizeOf = %d, 預期 150", got)
+	if got := SizeOf(dir); got != 150 {
+		t.Errorf("SizeOf = %d, 預期 150", got)
 	}
 }
