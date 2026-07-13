@@ -1,0 +1,33 @@
+version: 2
+project_name: mogura
+
+builds:
+  - main: ./cmd/mogura
+    binary: mogura
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "mogura_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: git
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

@@ -1,14 +1,13 @@
 package orphan
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
-
-	"mogura/internal/clean"
 )
 
 // Candidate 是一個找不到對應軟體的設定目錄,由使用者最終判斷是否刪除。
@@ -62,14 +61,10 @@ func ScanBases(bases []string, installed map[string]bool) []Candidate {
 				continue
 			}
 			path := filepath.Join(base, e.Name())
-			mtime := time.Time{}
-			if info, err := e.Info(); err == nil {
-				mtime = info.ModTime()
-			}
-			cands = append(cands, Candidate{Path: path, Name: e.Name(), ModTime: mtime})
+			cands = append(cands, Candidate{Path: path, Name: e.Name()})
 		}
 	}
-	fillSizes(cands)
+	fillStats(cands)
 	return cands
 }
 
@@ -87,17 +82,22 @@ func isActive(name string, installed map[string]bool) bool {
 		return true // 名稱太短無法可靠比對,一律視為使用中
 	}
 	for inst := range installed {
-		if len(inst) < 4 {
-			continue
-		}
-		if strings.Contains(inst, name) || strings.Contains(name, inst) {
+		if len(inst) >= 4 && (strings.Contains(inst, name) || strings.Contains(name, inst)) {
 			return true
+		}
+		// 逐 token 比對,涵蓋 BraveSoftware ↔ brave-browser 這類廠商名目錄
+		for _, tok := range strings.FieldsFunc(inst, func(r rune) bool {
+			return r == '-' || r == '_' || r == '.'
+		}) {
+			if len(tok) >= 4 && strings.Contains(name, tok) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func fillSizes(cands []Candidate) {
+func fillStats(cands []Candidate) {
 	sem := make(chan struct{}, runtime.NumCPU())
 	var wg sync.WaitGroup
 	for i := range cands {
@@ -106,10 +106,34 @@ func fillSizes(cands []Candidate) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			cands[i].Size = clean.SizeOf(cands[i].Path)
+			cands[i].Size, cands[i].ModTime = walkStats(cands[i].Path)
 		}(i)
 	}
 	wg.Wait()
+}
+
+// walkStats 一趟走訪同時算總大小與整棵樹最新的 mtime,
+// 頂層目錄的 mtime 不會反映深層變動,必須看全樹才準。
+func walkStats(path string) (int64, time.Time) {
+	var total int64
+	var latest time.Time
+	filepath.WalkDir(path, func(_ string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() {
+			total += info.Size()
+		}
+		if info.ModTime().After(latest) {
+			latest = info.ModTime()
+		}
+		return nil
+	})
+	return total, latest
 }
 
 // IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1。

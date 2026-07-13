@@ -10,7 +10,7 @@ import (
 	"mogura/internal/clean"
 )
 
-var version = "0.3.0-dev"
+var version = "0.4.0-dev"
 
 func main() {
 	args := os.Args[1:]
@@ -29,6 +29,10 @@ func main() {
 		err = runDev(args)
 	case "orphan":
 		err = runOrphan(args)
+	case "monitor":
+		err = runMonitor(args)
+	case "mem":
+		err = runMem(args)
 	case "version":
 		fmt.Println("mogura", version)
 	default:
@@ -49,6 +53,8 @@ func usage() {
   analyze    磁碟空間分析,互動瀏覽各目錄佔用
   dev        掃描開發專案的建置產物(node_modules、target、vendor...)
   orphan     找出已解除安裝軟體留下的孤兒設定檔
+  monitor    即時系統監控(CPU、記憶體、磁碟、網路)
+  mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
   version    顯示版本
 
 選項:
@@ -59,19 +65,28 @@ func usage() {
 // confirm 顯示選定項目摘要並要求使用者確認。
 func confirm(labels []string, sizes []int64, needRoot bool) bool {
 	var total int64
+	known := false
 	fmt.Println("\n將清理以下項目:")
 	for i, label := range labels {
 		size := "—"
 		if sizes[i] >= 0 {
 			size = clean.Humanize(sizes[i])
 			total += sizes[i]
+			known = true
 		}
 		fmt.Printf("  · %s(%s)\n", label, size)
 	}
-	fmt.Printf("預估釋放: %s\n", clean.Humanize(total))
+	if known {
+		fmt.Printf("預估釋放: %s\n", clean.Humanize(total))
+	}
 	if needRoot {
 		fmt.Println("部分項目需要 sudo,執行時可能要求輸入密碼。")
 	}
+	return promptYes()
+}
+
+// promptYes 讀取使用者的 y/N 確認。
+func promptYes() bool {
 	fmt.Print("確定執行?[y/N] ")
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	answer := strings.ToLower(strings.TrimSpace(line))

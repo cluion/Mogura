@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // System 是孤兒比對的依據:仍存在的軟體識別名,與 dpkg 已移除但留設定的套件。
@@ -64,6 +66,15 @@ func Detect() System {
 		}
 		for _, e := range entries {
 			sys.Installed[strings.ToLower(e.Name())] = true
+		}
+	}
+
+	// 正在執行的程序是最強的「活著」訊號,涵蓋 tarball/AppImage 這類套件系統外的安裝
+	if procs, err := process.Processes(); err == nil {
+		for _, p := range procs {
+			if name, err := p.Name(); err == nil && name != "" {
+				sys.Installed[strings.ToLower(name)] = true
+			}
 		}
 	}
 	return sys

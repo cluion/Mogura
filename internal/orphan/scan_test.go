@@ -12,6 +12,7 @@ func TestIsActive(t *testing.T) {
 		"google-chrome-stable": true,
 		"python3-pip":          true,
 		"code":                 true,
+		"brave-browser":        true,
 	}
 	cases := []struct {
 		name   string
@@ -22,6 +23,7 @@ func TestIsActive(t *testing.T) {
 		{"pip", true},                  // 發行版前綴 python3-pip
 		{"code", true},                 // 完全相符
 		{"gh", true},                   // 名稱太短,保守視為使用中
+		{"bravesoftware", true},        // token 比對:brave-browser 的 brave
 		{"ghost-editor-legacy", false}, // 無任何相符 → 孤兒
 	}
 	for _, c := range cases {

@@ -4,6 +4,15 @@
 
 Mogura(もぐら,日語的鼴鼠)是為 Linux 原生打造的系統清理工具。單一 Go 執行檔、無任何依賴。
 
+## 安裝
+
+```bash
+# 建立 GitHub repo 並發布 release 後即可使用(OWNER 待替換)
+curl -fsSL https://raw.githubusercontent.com/OWNER/mogura/main/install.sh | sh
+```
+
+或從原始碼建置:`go build -o mogura ./cmd/mogura`
+
 ## 使用
 
 ```bash
@@ -12,6 +21,8 @@ mogura clean --list # 只列出可回收空間,不清理
 mogura analyze [路徑] # 磁碟空間分析,互動瀏覽各目錄佔用
 mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
 mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
+mogura monitor       # 即時系統監控(CPU、記憶體、磁碟、網路)
+mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
 ```
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
@@ -30,4 +41,5 @@ go test ./...
 - [x] Phase 1:清理引擎 + Debian/Ubuntu 規則集 + 互動 TUI
 - [x] Phase 2:磁碟分析 + 開發垃圾掃描(node_modules、target、__pycache__)
 - [x] Phase 3:孤兒設定檔掃描(已移除套件 ↔ ~/.config 殘留比對)
-- [ ] Phase 4:系統監控、記憶體釋放、GoReleaser 發布 + 一鍵安裝
+- [x] Phase 4:系統監控、記憶體釋放、GoReleaser 發布 + 一鍵安裝
+- [ ] 發布:建立 GitHub repo → 打 tag → goreleaser release → 更新 install.sh 的 OWNER
