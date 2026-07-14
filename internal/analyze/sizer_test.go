@@ -48,6 +48,40 @@ func TestListSortedBySize(t *testing.T) {
 	}
 }
 
+func TestListStream(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{"a", "b", "c"} {
+		if err := os.WriteFile(filepath.Join(root, name), make([]byte, 100), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	s := NewSizer()
+	entries, ch, err := s.ListStream(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("初始項目數 = %d, 預期 3", len(entries))
+	}
+	for _, e := range entries {
+		if e.Size != SizeUnknown {
+			t.Errorf("初始大小應為 SizeUnknown,實際 %d", e.Size)
+		}
+	}
+
+	var got int
+	for e := range ch {
+		if e.Size == SizeUnknown || e.Size == 0 {
+			t.Errorf("串流結果 %s 的大小應已算出,實際 %d", e.Name, e.Size)
+		}
+		got++
+	}
+	if got != 3 {
+		t.Errorf("串流筆數 = %d, 預期 3(channel 應在送完後關閉)", got)
+	}
+}
+
 func TestInvalidate(t *testing.T) {
 	root := t.TempDir()
 	sub := filepath.Join(root, "sub")

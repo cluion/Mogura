@@ -43,32 +43,59 @@ func NewSizer() *Sizer {
 // SetProgress 設定即時進度匯流點。
 func (s *Sizer) SetProgress(p *clean.Progress) { s.live = p }
 
-// List 列出目錄下所有項目並平行計算統計,依大小遞減排序。
-func (s *Sizer) List(dir string) ([]Entry, error) {
+// SizeUnknown 表示該項目的統計尚未算出(串流中)。
+const SizeUnknown int64 = -1
+
+// ListStream 立即回傳項目清單(統計未知),統計算完一項就往 channel 送一項,
+// 全部完成後關閉 channel。
+func (s *Sizer) ListStream(dir string) ([]Entry, <-chan Entry, error) {
 	dirents, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	entries := make([]Entry, len(dirents))
-	sem := make(chan struct{}, runtime.NumCPU())
-	var wg sync.WaitGroup
 	for i, de := range dirents {
-		wg.Add(1)
-		go func(i int, name string, isDir bool) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			path := filepath.Join(dir, name)
-			st := s.stat(path)
-			entries[i] = Entry{
-				Name: name, Path: path, IsDir: isDir,
-				Size: st.size, Files: st.files, ModTime: st.mtime,
-			}
-		}(i, de.Name(), de.IsDir())
+		entries[i] = Entry{
+			Name: de.Name(), Path: filepath.Join(dir, de.Name()),
+			IsDir: de.IsDir(), Size: SizeUnknown,
+		}
 	}
-	wg.Wait()
 
+	ch := make(chan Entry, len(entries))
+	go func() {
+		defer close(ch)
+		sem := make(chan struct{}, runtime.NumCPU())
+		var wg sync.WaitGroup
+		for _, e := range entries {
+			wg.Add(1)
+			go func(e Entry) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				st := s.stat(e.Path)
+				e.Size, e.Files, e.ModTime = st.size, st.files, st.mtime
+				ch <- e
+			}(e)
+		}
+		wg.Wait()
+	}()
+	return entries, ch, nil
+}
+
+// List 列出目錄下所有項目並平行計算統計,依大小遞減排序(阻塞至全部完成)。
+func (s *Sizer) List(dir string) ([]Entry, error) {
+	entries, ch, err := s.ListStream(dir)
+	if err != nil {
+		return nil, err
+	}
+	byPath := make(map[string]int, len(entries))
+	for i, e := range entries {
+		byPath[e.Path] = i
+	}
+	for e := range ch {
+		entries[byPath[e.Path]] = e
+	}
 	sort.SliceStable(entries, func(a, b int) bool {
 		return entries[a].Size > entries[b].Size
 	})

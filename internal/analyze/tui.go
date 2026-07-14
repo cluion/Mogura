@@ -33,7 +33,15 @@ var (
 type loadedMsg struct {
 	dir     string
 	entries []Entry
+	ch      <-chan Entry
 	err     error
+}
+
+// statsMsg 是一批算完的統計;gen 用來丟棄舊串流(已離開目錄或已重載)的殘餘訊息。
+type statsMsg struct {
+	gen     int
+	entries []Entry
+	done    bool
 }
 
 type deletedMsg struct {
@@ -102,6 +110,10 @@ type browser struct {
 	status      string
 	prefetching map[string]bool // 背景預取中的目錄(map 為參考型別,跨複本共用)
 	scanProg    *clean.Progress
+	streaming   bool         // 目前目錄的統計還在陸續抵達
+	stream      <-chan Entry // 目前目錄的統計串流
+	gen         int          // 串流世代,每次載入遞增
+	moved       bool         // 使用者是否動過游標;沒動過就錨定頂端看開票
 }
 
 // Browse 啟動磁碟分析瀏覽器,從 root 開始向下鑽。
@@ -116,6 +128,27 @@ func Browse(root string) error {
 	}
 	_, err := tea.NewProgram(b, tea.WithAltScreen()).Run()
 	return err
+}
+
+// resortKeepCursor 依目前排序模式重排。使用者動過游標就跟著原項目走,
+// 沒動過則錨定頂端,開票時最大的項目浮上來會自動被選中。
+func (b *browser) resortKeepCursor() {
+	if len(b.entries) == 0 {
+		return
+	}
+	if !b.moved {
+		sortEntries(b.entries, b.sort)
+		b.cursor = 0
+		return
+	}
+	current := b.entries[b.cursor].Path
+	sortEntries(b.entries, b.sort)
+	for i, e := range b.entries {
+		if e.Path == current {
+			b.cursor = i
+			break
+		}
+	}
 }
 
 // prefetch 在游標停到目錄上時背景先算它的下一層,enter 時就有快取可用。
@@ -137,8 +170,31 @@ func (b browser) prefetch() tea.Cmd {
 
 func (b browser) load(dir string) tea.Cmd {
 	return func() tea.Msg {
-		entries, err := b.sizer.List(dir)
-		return loadedMsg{dir: dir, entries: entries, err: err}
+		entries, ch, err := b.sizer.ListStream(dir)
+		return loadedMsg{dir: dir, entries: entries, ch: ch, err: err}
+	}
+}
+
+// waitStats 從串流批次撈統計:至少等一筆,趁機把已到的一起帶走(上限 64)。
+func waitStats(gen int, ch <-chan Entry) tea.Cmd {
+	return func() tea.Msg {
+		e, ok := <-ch
+		if !ok {
+			return statsMsg{gen: gen, done: true}
+		}
+		batch := []Entry{e}
+		for len(batch) < 64 {
+			select {
+			case e2, ok2 := <-ch:
+				if !ok2 {
+					return statsMsg{gen: gen, entries: batch, done: true}
+				}
+				batch = append(batch, e2)
+			default:
+				return statsMsg{gen: gen, entries: batch}
+			}
+		}
+		return statsMsg{gen: gen, entries: batch}
 	}
 }
 
@@ -180,6 +236,7 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.dir != b.cwd {
 			b.cursor = 0 // 換目錄回到頂端;原地刷新(如刪除後)保留游標
+			b.moved = false
 		}
 		b.cwd = msg.dir
 		b.entries = msg.entries
@@ -188,14 +245,37 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			b.cursor = 0
 		}
 		b.loading = false
+		b.streaming = true
+		b.stream = msg.ch
+		b.gen++
 		b.errMsg = ""
-		return b, b.prefetch()
+		return b, tea.Batch(waitStats(b.gen, msg.ch), scanTick())
+	case statsMsg:
+		if msg.gen != b.gen {
+			return b, nil // 舊串流的殘餘統計丟棄(快取已順便暖好)
+		}
+		byPath := map[string]Entry{}
+		for _, e := range msg.entries {
+			byPath[e.Path] = e
+		}
+		for i, e := range b.entries {
+			if fresh, ok := byPath[e.Path]; ok {
+				b.entries[i] = fresh
+			}
+		}
+		b.resortKeepCursor()
+		if msg.done {
+			b.streaming = false
+			b.stream = nil
+			return b, b.prefetch()
+		}
+		return b, waitStats(b.gen, b.stream)
 	case prefetchDoneMsg:
 		delete(b.prefetching, msg.path)
 		return b, nil
 	case scanTickMsg:
-		if b.loading {
-			return b, scanTick() // 載入中每 0.1 秒重繪一次進度
+		if b.loading || b.streaming {
+			return b, scanTick() // 載入或開票中每 0.1 秒重繪一次進度
 		}
 		return b, nil
 	case deletedMsg:
@@ -232,26 +312,21 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q", "esc", "ctrl+c":
 		return b, tea.Quit
 	case "up", "k":
+		b.moved = true
 		if b.cursor > 0 {
 			b.cursor--
 		}
 		return b, b.prefetch()
 	case "down", "j":
+		b.moved = true
 		if b.cursor < len(b.entries)-1 {
 			b.cursor++
 		}
 		return b, b.prefetch()
 	case "s":
 		if len(b.entries) > 0 {
-			current := b.entries[b.cursor].Path
 			b.sort = (b.sort + 1) % sortModeCount
-			sortEntries(b.entries, b.sort)
-			for i, e := range b.entries {
-				if e.Path == current { // 排序後游標跟著原項目走
-					b.cursor = i
-					break
-				}
-			}
+			b.resortKeepCursor()
 		}
 	case "enter", "right", "l":
 		if !b.loading && b.cursor < len(b.entries) && b.entries[b.cursor].IsDir {
@@ -324,13 +399,17 @@ func (b browser) View() string {
 		if e.IsDir {
 			name = dirStyle.Render(name + "/")
 		}
+		size := "…"
 		extra := ""
-		if b.sort == sortMtime {
-			extra = pathStyle.Render(" · " + ageLabel(e.ModTime))
-		} else if e.IsDir {
-			extra = pathStyle.Render(" · " + clean.GroupDigits(e.Files) + " 檔")
+		if e.Size != SizeUnknown {
+			size = clean.Humanize(e.Size)
+			if b.sort == sortMtime {
+				extra = pathStyle.Render(" · " + ageLabel(e.ModTime))
+			} else if e.IsDir {
+				extra = pathStyle.Render(" · " + clean.GroupDigits(e.Files) + " 檔")
+			}
 		}
-		sb.WriteString(fmt.Sprintf("%s%s %s %s%s\n", cursor, sizeStyle.Render(clean.Humanize(e.Size)), bar, name, extra))
+		sb.WriteString(fmt.Sprintf("%s%s %s %s%s\n", cursor, sizeStyle.Render(size), bar, name, extra))
 	}
 	if len(b.entries) == 0 {
 		sb.WriteString(pathStyle.Render("(空目錄)") + "\n")
@@ -342,6 +421,15 @@ func (b browser) View() string {
 			b.confirm.Name, clean.Humanize(b.confirm.Size))))
 	case b.deleting:
 		sb.WriteString("\n刪除中...")
+	case b.streaming:
+		done := 0
+		for _, e := range b.entries {
+			if e.Size != SizeUnknown {
+				done++
+			}
+		}
+		sb.WriteString("\n" + pathStyle.Render(fmt.Sprintf("計算中 %d/%d · 已掃描 %s · %s 檔",
+			done, len(b.entries), clean.Humanize(b.scanProg.Bytes()), clean.GroupDigits(b.scanProg.Files()))))
 	case b.status != "":
 		sb.WriteString("\n" + b.status)
 	}
