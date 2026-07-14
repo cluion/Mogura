@@ -10,6 +10,8 @@
 
 Mogura(もぐら,日語的鼴鼠)是為 Linux 原生打造的系統清理工具。單一靜態執行檔,不需安裝任何 runtime 或函式庫;執行時只用系統標配工具(sh、coreutils),dpkg / snap / flatpak / uv 等則是有裝才用、沒裝自動略過。
 
+介面語言跟隨系統語系:`LANG` 為 `zh` 開頭顯示繁體中文,其他顯示英文(可用 `MOGURA_LANG=en|zh` 或 `mogura config` 覆蓋)。
+
 ![mogura clean](demo/clean.gif)
 
 ![mogura analyze](demo/analyze.gif)
@@ -39,10 +41,12 @@ mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
 mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
 mogura monitor       # 即時系統監控(CPU、記憶體、磁碟、網路)
 mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
+mogura config        # 開啟設定(語言);TUI 內也可按 , 呼出
 ```
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
 - 使用者層項目(快取、垃圾桶)不需要 root;標 🔒 的系統層項目才會要求 sudo
+- 數字是誠實的 `du` 口徑:實際磁碟佔用(`st_blocks`)、硬連結只計一次
 - 清理規則是宣告式 YAML(`internal/rules/data/`),新增規則不用改程式碼
 
 ## 開發
@@ -51,3 +55,7 @@ mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
 CGO_ENABLED=0 go build -o mogura ./cmd/mogura
 go test -race ./...
 ```
+
+## 授權
+
+[MIT](LICENSE)

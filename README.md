@@ -41,6 +41,7 @@ mogura dev [path]     # scan build artifacts (node_modules, target, vendor...)
 mogura orphan        # find configs left behind by uninstalled software
 mogura monitor       # live system monitor (CPU, memory, disk, network)
 mogura mem           # top memory consumers; --drop-caches / --swap-reset
+mogura config        # open settings (language); or press , inside any TUI
 ```
 
 - Scans first and shows the size of every item; nothing is deleted until you select and confirm
