@@ -1,5 +1,9 @@
 # 🦡 Mogura
 
+[![CI](https://github.com/cluion/Mogura/actions/workflows/ci.yml/badge.svg)](https://github.com/cluion/Mogura/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/cluion/Mogura)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 [繁體中文](README.zh-TW.md) | **English**
 
 Dig the junk out of your Linux disk, like a mole.
@@ -7,6 +11,10 @@ Dig the junk out of your Linux disk, like a mole.
 Mogura (もぐら, Japanese for "mole") is an interactive disk cleaner and analyzer built natively for Linux. A single static binary with no runtime or library dependencies — at runtime it only uses standard system tools (sh, coreutils), and package managers like dpkg / snap / flatpak / uv are used when present, skipped when not.
 
 The UI follows your locale: English by default, Traditional Chinese when `LANG` starts with `zh` (override with `MOGURA_LANG=en|zh`).
+
+![mogura clean](demo/clean.gif)
+
+![mogura analyze](demo/analyze.gif)
 
 ## Install
 

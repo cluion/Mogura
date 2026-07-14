@@ -1,10 +1,18 @@
 # 🦡 Mogura
 
+[![CI](https://github.com/cluion/Mogura/actions/workflows/ci.yml/badge.svg)](https://github.com/cluion/Mogura/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/cluion/Mogura)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **繁體中文** | [English](README.md)
 
 像鼴鼠一樣,把 Linux 磁碟裡的垃圾挖出來。
 
 Mogura(もぐら,日語的鼴鼠)是為 Linux 原生打造的系統清理工具。單一靜態執行檔,不需安裝任何 runtime 或函式庫;執行時只用系統標配工具(sh、coreutils),dpkg / snap / flatpak / uv 等則是有裝才用、沒裝自動略過。
+
+![mogura clean](demo/clean.gif)
+
+![mogura analyze](demo/analyze.gif)
 
 ## 安裝
 
