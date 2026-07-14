@@ -121,18 +121,9 @@ func withProgress(label string, prog *clean.Progress, fn func()) {
 			return
 		case <-tick.C:
 			fmt.Printf("\r\033[K🦡 %s  已掃描 %s · %s 個檔案",
-				label, clean.Humanize(prog.Bytes()), groupDigits(prog.Files()))
+				label, clean.Humanize(prog.Bytes()), clean.GroupDigits(prog.Files()))
 		}
 	}
-}
-
-// groupDigits 加上千分位,大數字才讀得出量級。
-func groupDigits(n int64) string {
-	s := fmt.Sprintf("%d", n)
-	for i := len(s) - 3; i > 0; i -= 3 {
-		s = s[:i] + "," + s[i:]
-	}
-	return s
 }
 
 // confirmAndRun 對選定項目做最終確認、執行並逐項回報。

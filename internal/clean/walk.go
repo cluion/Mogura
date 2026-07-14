@@ -12,8 +12,15 @@ import (
 
 // Progress 讓掃描過程即時回報累計量,供 UI 顯示;nil 時所有操作皆為 no-op。
 type Progress struct {
-	bytes atomic.Int64
-	files atomic.Int64
+	bytes  atomic.Int64
+	files  atomic.Int64
+	parent *Progress
+}
+
+// ChildProgress 建立子進度:累計時同步轉發給 parent(可為 nil),
+// 讓局部計數與全域即時顯示共用同一趟走訪。
+func ChildProgress(parent *Progress) *Progress {
+	return &Progress{parent: parent}
 }
 
 func (p *Progress) Bytes() int64 {
@@ -31,12 +38,14 @@ func (p *Progress) Files() int64 {
 }
 
 func (p *Progress) add(bytes int64, file bool) {
-	if p != nil {
-		p.bytes.Add(bytes)
-		if file {
-			p.files.Add(1)
-		}
+	if p == nil {
+		return
 	}
+	p.bytes.Add(bytes)
+	if file {
+		p.files.Add(1)
+	}
+	p.parent.add(bytes, file)
 }
 
 type inodeKey struct {

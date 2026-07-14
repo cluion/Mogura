@@ -151,6 +151,15 @@ func scanPaths(r rules.Rule, prog *Progress) (targets []string, sizes []int64) {
 	return targets, sizes
 }
 
+// GroupDigits 加上千分位,大數字才讀得出量級。
+func GroupDigits(n int64) string {
+	s := strconv.FormatInt(n, 10)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}
+
 // Humanize 將位元組數轉為人類可讀格式。
 func Humanize(n int64) string {
 	const unit = 1024

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestListSortedBySize(t *testing.T) {
@@ -32,6 +33,12 @@ func TestListSortedBySize(t *testing.T) {
 	}
 	if entries[0].Size <= entries[1].Size || entries[1].Size == 0 {
 		t.Errorf("大小排序錯誤: %d vs %d", entries[0].Size, entries[1].Size)
+	}
+	if entries[0].Files != 1 {
+		t.Errorf("bigdir 遞迴檔案數 = %d, 預期 1", entries[0].Files)
+	}
+	if entries[0].ModTime.IsZero() {
+		t.Error("ModTime 不應為零值")
 	}
 
 	// 快取:再次查詢同路徑不應出錯且結果一致
@@ -69,6 +76,54 @@ func TestInvalidate(t *testing.T) {
 	}
 	if after[0].Size >= before[0].Size {
 		t.Errorf("Invalidate 後大小應變小: %d → %d", before[0].Size, after[0].Size)
+	}
+}
+
+func TestSortEntries(t *testing.T) {
+	now := time.Now()
+	entries := []Entry{
+		{Name: "beta", Size: 100, ModTime: now.Add(-2 * time.Hour)},
+		{Name: "Alpha", Size: 300, ModTime: now.Add(-5 * time.Hour)},
+		{Name: "gamma", Size: 200, ModTime: now},
+	}
+	sortEntries(entries, sortSize)
+	if entries[0].Name != "Alpha" || entries[2].Name != "beta" {
+		t.Errorf("大小排序錯誤: %v", names(entries))
+	}
+	sortEntries(entries, sortName)
+	if entries[0].Name != "Alpha" || entries[1].Name != "beta" || entries[2].Name != "gamma" {
+		t.Errorf("名稱排序錯誤(應不分大小寫): %v", names(entries))
+	}
+	sortEntries(entries, sortMtime)
+	if entries[0].Name != "gamma" || entries[2].Name != "Alpha" {
+		t.Errorf("mtime 排序錯誤(新到舊): %v", names(entries))
+	}
+}
+
+func names(entries []Entry) []string {
+	out := make([]string, len(entries))
+	for i, e := range entries {
+		out[i] = e.Name
+	}
+	return out
+}
+
+func TestFillCells(t *testing.T) {
+	cases := []struct {
+		size, max int64
+		want      int
+	}{
+		{0, 100, 0},
+		{100, 100, barWidth},
+		{50, 100, barWidth / 2},
+		{300, 100, barWidth}, // size > max(非大小排序時會發生)不可超出寬度
+		{100, 0, 0},          // 防除以零
+		{-5, 100, 0},
+	}
+	for _, c := range cases {
+		if got := fillCells(c.size, c.max); got != c.want {
+			t.Errorf("fillCells(%d, %d) = %d, 預期 %d", c.size, c.max, got, c.want)
+		}
 	}
 }
 
