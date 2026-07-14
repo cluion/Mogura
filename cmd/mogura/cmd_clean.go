@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"mogura/internal/clean"
+	"mogura/internal/i18n"
 	"mogura/internal/rules"
 	"mogura/internal/ui"
 )
@@ -16,7 +17,7 @@ func runClean(args []string) error {
 			listOnly = true
 		default:
 			usage()
-			return fmt.Errorf("未知選項: %s", a)
+			return fmt.Errorf(i18n.T("未知選項: %s"), a)
 		}
 	}
 
@@ -27,7 +28,7 @@ func runClean(args []string) error {
 
 	prog := &clean.Progress{}
 	var results []clean.Result
-	withProgress("掃描系統垃圾中...", prog, func() {
+	withProgress(i18n.T("掃描系統垃圾中..."), prog, func() {
 		results = clean.ScanAll(rs, prog)
 	})
 
@@ -36,32 +37,42 @@ func runClean(args []string) error {
 		return nil
 	}
 
-	opts := make([]ui.Option, len(results))
-	for i, r := range results {
-		opts[i] = ui.Option{
-			Label: r.Rule.Name,
-			Desc:  r.Rule.Description,
-			Size:  r.Size,
-			Known: r.Known,
-			Risk:  r.Rule.Risk,
-			Root:  r.Rule.Root,
-			Value: r,
-		}
-	}
-	selected, err := ui.MultiSelect("Mogura — 選擇要清理的項目", opts)
-	if err != nil {
-		return err
-	}
-	if len(selected) == 0 {
-		fmt.Println("未選擇任何項目,結束。")
-		return nil
-	}
+	for {
 
-	var picked []clean.Result
-	for _, o := range selected {
-		picked = append(picked, o.Value.(clean.Result))
+		opts := make([]ui.Option, len(results))
+		for i, r := range results {
+			opts[i] = ui.Option{
+				Label: r.Rule.Name,
+				Desc:  r.Rule.Description,
+				Size:  r.Size,
+				Known: r.Known,
+				Risk:  r.Rule.Risk,
+				Root:  r.Rule.Root,
+				Value: r,
+			}
+		}
+		selected, restart, err := ui.MultiSelect(i18n.T("Mogura — 選擇要清理的項目"), opts)
+		if err != nil {
+			return err
+		}
+		if restart {
+			// 語言已切換:重載規則取得新語言文字,原地重貼標籤,不重掃
+			if fresh, err := rules.Load(); err == nil {
+				clean.Relabel(results, fresh)
+			}
+			continue
+		}
+		if len(selected) == 0 {
+			fmt.Println(i18n.T("未選擇任何項目,結束。"))
+			return nil
+		}
+
+		var picked []clean.Result
+		for _, o := range selected {
+			picked = append(picked, o.Value.(clean.Result))
+		}
+		return confirmAndRun(picked)
 	}
-	return confirmAndRun(picked)
 }
 
 func printCleanList(results []clean.Result) {
@@ -78,5 +89,5 @@ func printCleanList(results []clean.Result) {
 		}
 		fmt.Printf("  %10s  %s %-24s %s\n", size, root, r.Rule.Name, r.Rule.Description)
 	}
-	fmt.Printf("\n合計可回收(可估算項目): %s\n", clean.Humanize(total))
+	fmt.Print(i18n.Tf("\n合計可回收(可估算項目): %s\n", clean.Humanize(total)))
 }

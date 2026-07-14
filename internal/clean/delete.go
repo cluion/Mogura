@@ -1,10 +1,13 @@
 package clean
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+
+	"mogura/internal/i18n"
 )
 
 // ItemOutcome 是單一規則的執行結果,供上層逐項回報。
@@ -53,7 +56,7 @@ func executeOne(res Result) error {
 		}
 	}
 	if len(failed) > 0 {
-		return fmt.Errorf("%d 個目標刪除失敗: %s", len(failed), strings.Join(failed, ", "))
+		return fmt.Errorf(i18n.T("%d 個目標刪除失敗: %s"), len(failed), strings.Join(failed, ", "))
 	}
 	return nil
 }
@@ -62,18 +65,18 @@ func executeOne(res Result) error {
 // 且非 root 規則只允許刪除家目錄內的路徑。
 func guardPath(path string, root bool) error {
 	if !strings.HasPrefix(path, "/") {
-		return fmt.Errorf("非絕對路徑")
+		return errors.New(i18n.T("非絕對路徑"))
 	}
 	if strings.Count(path, "/") < 3 {
-		return fmt.Errorf("路徑層級過淺,拒絕刪除")
+		return errors.New(i18n.T("路徑層級過淺,拒絕刪除"))
 	}
 	if !root {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return fmt.Errorf("無法取得家目錄: %w", err)
+			return fmt.Errorf(i18n.T("無法取得家目錄: %w"), err)
 		}
 		if !strings.HasPrefix(path, home+string(os.PathSeparator)) {
-			return fmt.Errorf("使用者層規則不可刪除家目錄以外的路徑")
+			return errors.New(i18n.T("使用者層規則不可刪除家目錄以外的路徑"))
 		}
 	}
 	return nil

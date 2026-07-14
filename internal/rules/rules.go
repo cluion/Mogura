@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"mogura/internal/i18n"
 )
 
 //go:embed data/*.yaml
@@ -66,6 +68,9 @@ func Load() ([]Rule, error) {
 					continue
 				}
 			}
+			// 在載入點翻譯一次,下游顯示、確認、回報全部自動生效
+			r.Name = i18n.T(r.Name)
+			r.Description = i18n.T(r.Description)
 			all = append(all, r)
 		}
 	}

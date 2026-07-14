@@ -13,6 +13,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"mogura/internal/clean"
+	"mogura/internal/i18n"
+	"mogura/internal/ui"
 )
 
 const barWidth = 20
@@ -106,6 +108,7 @@ type browser struct {
 	sort    sortMode
 
 	confirm     *Entry // 非 nil 時處於刪除確認狀態
+	settings    *ui.Settings
 	deleting    bool
 	status      string
 	prefetching map[string]bool // 背景預取中的目錄(map 為參考型別,跨複本共用)
@@ -210,13 +213,13 @@ func deleteEntry(e Entry) tea.Cmd {
 // deleteGuard 是 TUI 刪除的防呆:擋根目錄、第一層系統目錄與家目錄本身。
 func deleteGuard(path string) error {
 	if !filepath.IsAbs(path) || path == "/" {
-		return errors.New("拒絕刪除")
+		return errors.New(i18n.T("拒絕刪除"))
 	}
 	if strings.Count(path, "/") < 2 {
-		return errors.New("拒絕刪除第一層系統目錄")
+		return errors.New(i18n.T("拒絕刪除第一層系統目錄"))
 	}
 	if home, err := os.UserHomeDir(); err == nil && filepath.Clean(path) == filepath.Clean(home) {
-		return errors.New("拒絕刪除家目錄")
+		return errors.New(i18n.T("拒絕刪除家目錄"))
 	}
 	return nil
 }
@@ -281,10 +284,10 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case deletedMsg:
 		b.deleting = false
 		if msg.err != nil {
-			b.status = dangerLine.Render("刪除失敗:" + msg.err.Error())
+			b.status = dangerLine.Render(i18n.T("刪除失敗:") + msg.err.Error())
 			return b, nil
 		}
-		b.status = okLine.Render(fmt.Sprintf("已刪除 %s,釋放 %s", msg.entry.Name, clean.Humanize(msg.entry.Size)))
+		b.status = okLine.Render(i18n.Tf("已刪除 %s,釋放 %s", msg.entry.Name, clean.Humanize(msg.entry.Size)))
 		b.sizer.Invalidate(msg.entry.Path)
 		b.loading = true
 		return b, tea.Batch(b.load(b.cwd), scanTick())
@@ -295,6 +298,15 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if b.settings != nil {
+		s, closed := b.settings.HandleKey(key)
+		if closed {
+			b.settings = nil
+		} else {
+			b.settings = &s
+		}
+		return b, nil
+	}
 	// 刪除確認狀態:只接受 y / 其他鍵取消
 	if b.confirm != nil {
 		target := *b.confirm
@@ -304,7 +316,7 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			b.status = ""
 			return b, deleteEntry(target)
 		}
-		b.status = "已取消刪除。"
+		b.status = i18n.T("已取消刪除。")
 		return b, nil
 	}
 
@@ -345,23 +357,29 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			b.confirm = &e
 			b.status = ""
 		}
+	case ",":
+		s := ui.NewSettings()
+		b.settings = &s
 	}
 	return b, nil
 }
 
 func (b browser) View() string {
+	if b.settings != nil {
+		return b.settings.View()
+	}
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Render("🦡 Mogura 磁碟分析") + "  " + pathStyle.Render(b.cwd) +
-		pathStyle.Render("  排序:"+b.sort.label()) + "\n\n")
+	sb.WriteString(headerStyle.Render(i18n.T("🦡 Mogura 磁碟分析")) + "  " + pathStyle.Render(b.cwd) +
+		pathStyle.Render(i18n.T("  排序:")+i18n.T(b.sort.label())) + "\n\n")
 
 	if b.loading {
-		sb.WriteString(fmt.Sprintf("掃描中...  已掃描 %s · %s 檔\n",
+		sb.WriteString(i18n.Tf("掃描中...  已掃描 %s · %s 檔\n",
 			clean.Humanize(b.scanProg.Bytes()), clean.GroupDigits(b.scanProg.Files())))
 		return sb.String()
 	}
 	if b.errMsg != "" {
-		sb.WriteString("讀取失敗: " + b.errMsg + "\n")
-		sb.WriteString(helpStyle.Render("backspace 返回上層 · q 離開"))
+		sb.WriteString(i18n.T("讀取失敗: ") + b.errMsg + "\n")
+		sb.WriteString(helpStyle.Render(i18n.T("backspace 返回上層 · q 離開")))
 		return sb.String()
 	}
 
@@ -406,21 +424,21 @@ func (b browser) View() string {
 			if b.sort == sortMtime {
 				extra = pathStyle.Render(" · " + ageLabel(e.ModTime))
 			} else if e.IsDir {
-				extra = pathStyle.Render(" · " + clean.GroupDigits(e.Files) + " 檔")
+				extra = pathStyle.Render(" · " + clean.GroupDigits(e.Files) + i18n.T(" 檔"))
 			}
 		}
 		sb.WriteString(fmt.Sprintf("%s%s %s %s%s\n", cursor, sizeStyle.Render(size), bar, name, extra))
 	}
 	if len(b.entries) == 0 {
-		sb.WriteString(pathStyle.Render("(空目錄)") + "\n")
+		sb.WriteString(pathStyle.Render(i18n.T("(空目錄)")) + "\n")
 	}
 
 	switch {
 	case b.confirm != nil:
-		sb.WriteString("\n" + dangerLine.Render(fmt.Sprintf("刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消",
+		sb.WriteString("\n" + dangerLine.Render(i18n.Tf("刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消",
 			b.confirm.Name, clean.Humanize(b.confirm.Size))))
 	case b.deleting:
-		sb.WriteString("\n刪除中...")
+		sb.WriteString("\n" + i18n.T("刪除中..."))
 	case b.streaming:
 		done := 0
 		for _, e := range b.entries {
@@ -428,13 +446,13 @@ func (b browser) View() string {
 				done++
 			}
 		}
-		sb.WriteString("\n" + pathStyle.Render(fmt.Sprintf("計算中 %d/%d · 已掃描 %s · %s 檔",
+		sb.WriteString("\n" + pathStyle.Render(i18n.Tf("計算中 %d/%d · 已掃描 %s · %s 檔",
 			done, len(b.entries), clean.Humanize(b.scanProg.Bytes()), clean.GroupDigits(b.scanProg.Files()))))
 	case b.status != "":
 		sb.WriteString("\n" + b.status)
 	}
 
-	sb.WriteString(helpStyle.Render("\nenter 進入 · backspace 上層 · s 排序 · d 刪除 · q 離開"))
+	sb.WriteString(helpStyle.Render(i18n.T("\nenter 進入 · backspace 上層 · s 排序 · d 刪除 · , 設定 · q 離開")))
 	return sb.String()
 }
 
@@ -453,15 +471,15 @@ func fillCells(size, max int64) int {
 // ageLabel 把 mtime 轉成相對時間描述。
 func ageLabel(t time.Time) string {
 	if t.IsZero() {
-		return "未知"
+		return i18n.T("未知")
 	}
 	d := time.Since(t)
 	switch {
 	case d < time.Hour:
-		return "剛剛"
+		return i18n.T("剛剛")
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%d 小時前", int(d.Hours()))
+		return i18n.Tf("%d 小時前", int(d.Hours()))
 	default:
-		return fmt.Sprintf("%d 天前", int(d.Hours()/24))
+		return i18n.Tf("%d 天前", int(d.Hours()/24))
 	}
 }

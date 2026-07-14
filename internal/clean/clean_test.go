@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"mogura/internal/i18n"
 	"mogura/internal/rules"
 )
 
@@ -161,6 +162,32 @@ func TestWalkHardlinkDedup(t *testing.T) {
 	size, _ := Walk(dir, nil)
 	if size != want {
 		t.Errorf("size = %d, 預期 %d(硬連結應只計一次)", size, want)
+	}
+}
+
+func TestRelabel(t *testing.T) {
+	i18n.SetEnglish(true)
+	defer i18n.SetEnglish(false)
+
+	results := []Result{
+		{Rule: rules.Rule{ID: "c", Name: "快取 · spotify", Expand: true}, Targets: []string{"/home/u/.cache/spotify"}},
+		{Rule: rules.Rule{ID: "c", Name: "快取 · 其餘 5 項", Expand: true}, Targets: []string{"/a/b/x", "/a/b/y"}},
+		{Rule: rules.Rule{ID: "p", Name: "垃圾桶"}, Targets: []string{"/home/u/.local/share/Trash/files/f"}},
+	}
+	fresh := []rules.Rule{
+		{ID: "c", Name: "Cache", Description: "caches", Expand: true},
+		{ID: "p", Name: "Trash", Description: "trash"},
+	}
+	Relabel(results, fresh)
+
+	if results[0].Rule.Name != "Cache · spotify" {
+		t.Errorf("展開子項 = %q", results[0].Rule.Name)
+	}
+	if results[1].Rule.Name != "Cache · 2 others" {
+		t.Errorf("合併項 = %q", results[1].Rule.Name)
+	}
+	if results[2].Rule.Name != "Trash" || results[2].Rule.Description != "trash" {
+		t.Errorf("一般規則 = %q / %q", results[2].Rule.Name, results[2].Rule.Description)
 	}
 }
 

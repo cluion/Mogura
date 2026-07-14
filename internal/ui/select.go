@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"mogura/internal/clean"
+	"mogura/internal/i18n"
 )
 
 var (
@@ -44,34 +45,39 @@ type item struct {
 }
 
 type model struct {
-	title   string
-	items   []item
-	cursor  int
-	height  int
-	aborted bool
+	title    string
+	items    []item
+	cursor   int
+	height   int
+	aborted  bool
+	restart  bool
+	settings *Settings
 }
 
 // MultiSelect 顯示互動多選清單,回傳使用者勾選的項目;取消時回傳 nil。
-func MultiSelect(title string, opts []Option) ([]Option, error) {
+// restart 為 true 表示使用者在面板中切換了語言,呼叫端應重建流程再進來。
+func MultiSelect(title string, opts []Option) (selected []Option, restart bool, err error) {
 	items := make([]item, len(opts))
 	for i, o := range opts {
 		items[i] = item{opt: o}
 	}
 	final, err := tea.NewProgram(model{title: title, items: items, height: 24}).Run()
 	if err != nil {
-		return nil, fmt.Errorf("互動介面啟動失敗: %w", err)
+		return nil, false, fmt.Errorf(i18n.T("互動介面啟動失敗: %w"), err)
 	}
 	m := final.(model)
-	if m.aborted {
-		return nil, nil
+	if m.restart {
+		return nil, true, nil
 	}
-	var selected []Option
+	if m.aborted {
+		return nil, false, nil
+	}
 	for _, it := range m.items {
 		if it.selected {
 			selected = append(selected, it.opt)
 		}
 	}
-	return selected, nil
+	return selected, false, nil
 }
 
 func (m model) Init() tea.Cmd { return nil }
@@ -83,6 +89,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
+		return m, nil
+	}
+	if m.settings != nil {
+		s, closed := m.settings.HandleKey(key)
+		if closed {
+			if s.Changed() {
+				m.restart = true // 語言變了,請宿主重建整個選單
+				return m, tea.Quit
+			}
+			m.settings = nil
+		} else {
+			m.settings = &s
+		}
 		return m, nil
 	}
 	switch key.String() {
@@ -109,11 +128,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		return m, tea.Quit
+	case ",":
+		s := NewSettings()
+		m.settings = &s
 	}
 	return m, nil
 }
 
 func (m model) View() string {
+	if m.settings != nil {
+		return m.settings.View()
+	}
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("🦡 "+m.title) + "\n\n")
 
@@ -154,7 +179,7 @@ func (m model) View() string {
 		}
 		risk := ""
 		if it.opt.Risk != "" {
-			risk = riskStyles[it.opt.Risk].Render(riskLabels[it.opt.Risk]) + " "
+			risk = riskStyles[it.opt.Risk].Render(i18n.T(riskLabels[it.opt.Risk])) + " "
 		}
 		lock := "  "
 		if it.opt.Root {
@@ -167,7 +192,7 @@ func (m model) View() string {
 		}
 	}
 
-	b.WriteString("\n" + totalStyle.Render("已選擇可回收: "+clean.Humanize(total)))
-	b.WriteString(helpStyle.Render("\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · q 離開 · 🔒 需要 sudo"))
+	b.WriteString("\n" + totalStyle.Render(i18n.T("已選擇可回收: ")+clean.Humanize(total)))
+	b.WriteString(helpStyle.Render(i18n.T("\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · , 設定 · q 離開 · 🔒 需要 sudo")))
 	return b.String()
 }

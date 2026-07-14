@@ -2,7 +2,6 @@
 package clean
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"mogura/internal/i18n"
 	"mogura/internal/rules"
 )
 
@@ -101,7 +101,7 @@ func expandResults(r rules.Rule, targets []string, sizes []int64) []Result {
 			break
 		}
 		child := r
-		child.Name = r.Name + " · " + filepath.Base(targets[i])
+		child.Name = r.Name + " · " + filepath.Base(targets[i]) // r.Name 已於載入點翻譯
 		child.Description = displayPath(targets[i])
 		results = append(results, Result{
 			Rule: child, Targets: []string{targets[i]}, Size: sizes[i], Known: true,
@@ -109,7 +109,7 @@ func expandResults(r rules.Rule, targets []string, sizes []int64) []Result {
 	}
 	if rest := idx[min(expandTopN, len(idx)):]; len(rest) > 0 {
 		agg := r
-		agg.Name = fmt.Sprintf("%s · 其餘 %d 項", r.Name, len(rest))
+		agg.Name = r.Name + " · " + i18n.Tf("其餘 %d 項", len(rest))
 		var restTargets []string
 		var restSize int64
 		for _, i := range rest {
@@ -119,6 +119,29 @@ func expandResults(r rules.Rule, targets []string, sizes []int64) []Result {
 		results = append(results, Result{Rule: agg, Targets: restTargets, Size: restSize, Known: true})
 	}
 	return results
+}
+
+// Relabel 以新載入的規則(語言可能已切換)重建結果的顯示文字,不重新掃描。
+func Relabel(results []Result, rs []rules.Rule) {
+	byID := map[string]rules.Rule{}
+	for _, r := range rs {
+		byID[r.ID] = r
+	}
+	for i := range results {
+		fresh, ok := byID[results[i].Rule.ID]
+		if !ok {
+			continue
+		}
+		if results[i].Rule.Expand && len(results[i].Targets) > 0 {
+			if len(results[i].Targets) == 1 {
+				fresh.Description = displayPath(results[i].Targets[0])
+				fresh.Name += " · " + filepath.Base(results[i].Targets[0])
+			} else {
+				fresh.Name += " · " + i18n.Tf("其餘 %d 項", len(results[i].Targets))
+			}
+		}
+		results[i].Rule = fresh
+	}
 }
 
 // displayPath 把家目錄縮寫成 ~,讓子項描述短一點。

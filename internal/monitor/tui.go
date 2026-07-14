@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"mogura/internal/clean"
+	"mogura/internal/i18n"
 )
 
 const refreshInterval = 2 * time.Second
@@ -82,15 +83,15 @@ func bar(pct float64, width int) string {
 
 func (d dashboard) View() string {
 	if !d.ready {
-		return "🦡 取樣中...\n"
+		return i18n.T("🦡 取樣中...\n")
 	}
 	s := d.snap
 	var b strings.Builder
 
 	up := s.Uptime.Round(time.Minute)
 	days := int(up.Hours()) / 24
-	b.WriteString(headerStyle.Render("🦡 Mogura 系統監控") + "  " +
-		faintStyle.Render(fmt.Sprintf("%s · 開機 %d 天 %s · 負載 %.2f %.2f %.2f",
+	b.WriteString(headerStyle.Render(i18n.T("🦡 Mogura 系統監控")) + "  " +
+		faintStyle.Render(i18n.Tf("%s · 開機 %d 天 %s · 負載 %.2f %.2f %.2f",
 			s.Hostname, days, up-time.Duration(days)*24*time.Hour, s.Load1, s.Load5, s.Load15)) + "\n\n")
 
 	b.WriteString(sectionStyle.Render("CPU") + fmt.Sprintf("  %5.1f%%  ", s.CPUTotal) + bar(s.CPUTotal, 30) + "\n")
@@ -102,8 +103,8 @@ func (d dashboard) View() string {
 		b.WriteString("\n")
 	}
 
-	b.WriteString("\n" + sectionStyle.Render("記憶體") + fmt.Sprintf("  %5.1f%%  ", s.MemPercent) + bar(s.MemPercent, 30) +
-		faintStyle.Render(fmt.Sprintf("  %s / %s · 可用 %s",
+	b.WriteString("\n" + sectionStyle.Render(i18n.T("記憶體")) + fmt.Sprintf("  %5.1f%%  ", s.MemPercent) + bar(s.MemPercent, 30) +
+		faintStyle.Render(i18n.Tf("  %s / %s · 可用 %s",
 			clean.Humanize(int64(s.MemUsed)), clean.Humanize(int64(s.MemTotal)), clean.Humanize(int64(s.MemAvailable)))) + "\n")
 	if s.SwapTotal > 0 {
 		swapPct := float64(s.SwapUsed) / float64(s.SwapTotal) * 100
@@ -113,7 +114,7 @@ func (d dashboard) View() string {
 	}
 
 	if len(s.Disks) > 0 {
-		b.WriteString("\n" + sectionStyle.Render("磁碟") + "\n")
+		b.WriteString("\n" + sectionStyle.Render(i18n.T("磁碟")) + "\n")
 		for _, d := range s.Disks {
 			b.WriteString(fmt.Sprintf("  %-16s %5.1f%%  %s  %s\n",
 				d.Mount, d.Percent, bar(d.Percent, 30),
@@ -122,10 +123,10 @@ func (d dashboard) View() string {
 		}
 	}
 
-	b.WriteString("\n" + sectionStyle.Render("網路") +
+	b.WriteString("\n" + sectionStyle.Render(i18n.T("網路")) +
 		fmt.Sprintf("  ↓ %s/s  ↑ %s/s\n",
 			clean.Humanize(int64(s.RxRate)), clean.Humanize(int64(s.TxRate))))
 
-	b.WriteString(faintStyle.Render("\n每 2 秒更新 · q 離開"))
+	b.WriteString(faintStyle.Render(i18n.T("\n每 2 秒更新 · q 離開")))
 	return b.String()
 }
