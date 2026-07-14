@@ -35,6 +35,24 @@ func Detect() System {
 		}
 	}
 
+	// Arch:pacman -Qq 直接輸出套件名
+	if out, err := exec.Command("pacman", "-Qq").Output(); err == nil {
+		for _, line := range strings.Split(string(out), "\n") {
+			if name := strings.TrimSpace(line); name != "" {
+				sys.Installed[strings.ToLower(name)] = true
+			}
+		}
+	}
+
+	// Fedora/openSUSE:rpm 查詢僅取套件名
+	if out, err := exec.Command("rpm", "-qa", "--qf", "%{NAME}\n").Output(); err == nil {
+		for _, line := range strings.Split(string(out), "\n") {
+			if name := strings.TrimSpace(line); name != "" {
+				sys.Installed[strings.ToLower(name)] = true
+			}
+		}
+	}
+
 	if out, err := exec.Command("snap", "list").Output(); err == nil {
 		for i, line := range strings.Split(string(out), "\n") {
 			if i == 0 {

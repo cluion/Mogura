@@ -21,6 +21,18 @@ archives:
       - README.md
       - LICENSE*
 
+nfpms:
+  - package_name: mogura
+    vendor: Cluion
+    homepage: https://github.com/cluion/Mogura
+    maintainer: Hugo <hugo@cluion.com>
+    description: 像鼴鼠一樣把 Linux 磁碟裡的垃圾挖出來的互動式系統清理工具
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+
 checksum:
   name_template: checksums.txt
 

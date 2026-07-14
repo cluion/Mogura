@@ -9,6 +9,37 @@
   risk: low
   root: true
 
+- id: pacman-cache
+  name: Pacman 套件快取
+  description: 已下載的套件安裝檔,保留已安裝版本,其餘清除
+  requires: pacman
+  paths:
+    - "/var/cache/pacman/pkg"
+  action: "pacman -Sc --noconfirm"
+  risk: low
+  root: true
+
+- id: dnf-cache
+  name: DNF 套件快取
+  description: dnf 的套件與中繼資料快取,需要時會重新下載
+  requires: dnf
+  paths:
+    - "/var/cache/dnf"
+    - "/var/cache/libdnf5"
+  action: "dnf clean all"
+  risk: low
+  root: true
+
+- id: zypper-cache
+  name: Zypper 套件快取
+  description: zypper 的套件與中繼資料快取
+  requires: zypper
+  paths:
+    - "/var/cache/zypp"
+  action: "zypper clean --all"
+  risk: low
+  root: true
+
 - id: journal-logs
   name: systemd 日誌
   description: 清除 7 天以前的 journal 日誌
