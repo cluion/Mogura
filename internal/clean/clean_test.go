@@ -12,6 +12,12 @@ import (
 	"mogura/internal/rules"
 )
 
+// TestMain 固定測試語言為繁中,CI 等無 zh 語系的環境才不會影響字串斷言。
+func TestMain(m *testing.M) {
+	i18n.SetEnglish(false)
+	os.Exit(m.Run())
+}
+
 // diskSize 以 du 口徑(st_blocks×512)回傳單一路徑的磁碟佔用。
 func diskSize(t *testing.T, path string) int64 {
 	t.Helper()
