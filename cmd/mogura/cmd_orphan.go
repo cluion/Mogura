@@ -14,11 +14,13 @@ import (
 )
 
 func runOrphan(args []string) error {
-	listOnly := false
+	listOnly, jsonOut := false, false
 	for _, a := range args {
 		switch a {
 		case "--list":
 			listOnly = true
+		case "--json":
+			jsonOut = true
 		default:
 			usage()
 			return fmt.Errorf(i18n.T("未知選項: %s"), a)
@@ -38,6 +40,9 @@ func runOrphan(args []string) error {
 	})
 	sort.SliceStable(cands, func(a, b int) bool { return cands[a].Size > cands[b].Size })
 
+	if jsonOut {
+		return printOrphanJSON(cands, sys.RemovedConfigs)
+	}
 	if len(cands) == 0 && len(sys.RemovedConfigs) == 0 {
 		fmt.Println(i18n.T("沒有找到孤兒設定,很乾淨!"))
 		return nil

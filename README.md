@@ -42,6 +42,13 @@ mogura orphan        # find configs left behind by uninstalled software
 mogura monitor       # live system monitor (CPU, memory, disk, network)
 mogura mem           # top memory consumers; --drop-caches / --swap-reset
 mogura config        # open settings (language); or press , inside any TUI
+mogura completion bash|zsh|fish  # print shell completion script
+```
+
+Every list command also takes `--json` (stable ids, sizes in bytes, locale-independent keys) for scripting:
+
+```bash
+mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 ```
 
 - Scans first and shows the size of every item; nothing is deleted until you select and confirm

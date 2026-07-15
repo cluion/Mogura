@@ -10,11 +10,13 @@ import (
 )
 
 func runClean(args []string) error {
-	listOnly := false
+	listOnly, jsonOut := false, false
 	for _, a := range args {
 		switch a {
 		case "--list":
 			listOnly = true
+		case "--json":
+			jsonOut = true
 		default:
 			usage()
 			return fmt.Errorf(i18n.T("未知選項: %s"), a)
@@ -32,6 +34,9 @@ func runClean(args []string) error {
 		results = clean.ScanAll(rs, prog)
 	})
 
+	if jsonOut {
+		return printCleanJSON(results)
+	}
 	if listOnly || !isTTY() {
 		printCleanList(results)
 		return nil

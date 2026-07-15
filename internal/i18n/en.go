@@ -21,10 +21,12 @@ var en = map[string]string{
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
   config     開啟設定(語言)
+  completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
 選項:
-  --list         只列出結果,不進入互動清理(clean、dev)
+  --list         只列出結果,不進入互動清理(clean、dev、orphan)
+  --json         以 JSON 輸出結果(clean、dev、orphan、mem)
   [路徑]         analyze 與 dev 的起始目錄,預設為家目錄`: `Usage: mogura [command] [options]
 
 Commands:
@@ -35,10 +37,12 @@ Commands:
   monitor    live system monitor (CPU, memory, disk, network)
   mem        top memory consumers; --drop-caches / --swap-reset
   config     open settings (language)
+  completion print shell completion script (bash|zsh|fish)
   version    show version
 
 Options:
-  --list         list results only, skip interactive cleaning (clean, dev)
+  --list         list results only, skip interactive cleaning (clean, dev, orphan)
+  --json         output results as JSON (clean, dev, orphan, mem)
   [path]         start directory for analyze and dev, defaults to home`,
 
 	// 確認與執行
@@ -94,20 +98,22 @@ Options:
 	"  swap 使用   %s → %s(內容已搬回 RAM)\n": "  Swap usage   %s → %s (contents moved back to RAM)\n",
 
 	// analyze
-	"路徑不存在: %s":               "path does not exist: %s",
-	"%s 不是目錄":                 "%s is not a directory",
-	"analyze 需要互動終端機":         "analyze needs an interactive terminal",
-	"monitor 需要互動終端機":         "monitor needs an interactive terminal",
-	"config 需要互動終端機":          "config needs an interactive terminal",
-	"🦡 Mogura 磁碟分析":           "🦡 Mogura Disk Analyzer",
-	"  排序:":                   "  sort: ",
-	"大小":                      "size",
-	"名稱":                      "name",
-	"修改時間":                    "modified",
-	"掃描中...  已掃描 %s · %s 檔\n": "Scanning...  %s · %s files so far\n",
-	"讀取失敗: ":                  "read failed: ",
-	"(空目錄)":                   "(empty directory)",
-	"backspace 返回上層 · q 離開":   "backspace go up · q quit",
+	"路徑不存在: %s":                             "path does not exist: %s",
+	"%s 不是目錄":                               "%s is not a directory",
+	"analyze 需要互動終端機":                       "analyze needs an interactive terminal",
+	"monitor 需要互動終端機":                       "monitor needs an interactive terminal",
+	"config 需要互動終端機":                        "config needs an interactive terminal",
+	"completion 需要指定 shell:bash、zsh 或 fish": "completion needs a shell: bash, zsh or fish",
+	"不支援的 shell: %s(支援 bash、zsh、fish)":      "unsupported shell: %s (bash, zsh and fish are supported)",
+	"🦡 Mogura 磁碟分析":                         "🦡 Mogura Disk Analyzer",
+	"  排序:":                                 "  sort: ",
+	"大小":                                    "size",
+	"名稱":                                    "name",
+	"修改時間":                                  "modified",
+	"掃描中...  已掃描 %s · %s 檔\n":               "Scanning...  %s · %s files so far\n",
+	"讀取失敗: ":                                "read failed: ",
+	"(空目錄)":                                 "(empty directory)",
+	"backspace 返回上層 · q 離開":                 "backspace go up · q quit",
 	"刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消": "Delete %s (%s)? This cannot be undone.  y confirm · any other key cancels",
 	"刪除中...":                    "Deleting...",
 	"已刪除 %s,釋放 %s":              "Deleted %s, freed %s",

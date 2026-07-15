@@ -42,6 +42,13 @@ mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
 mogura monitor       # 即時系統監控(CPU、記憶體、磁碟、網路)
 mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
 mogura config        # 開啟設定(語言);TUI 內也可按 , 呼出
+mogura completion bash|zsh|fish  # 輸出 shell 補全腳本
+```
+
+列表型指令都支援 `--json`(id 穩定、大小為 bytes、鍵與介面語言脫鉤),方便寫腳本:
+
+```bash
+mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 ```
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手

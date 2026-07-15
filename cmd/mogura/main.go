@@ -42,6 +42,8 @@ func main() {
 		err = runMem(args)
 	case "config":
 		err = runConfig(args)
+	case "completion":
+		err = runCompletion(args)
 	case "version":
 		fmt.Println("mogura", version)
 	default:
@@ -65,10 +67,12 @@ func usage() {
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
   config     開啟設定(語言)
+  completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
 選項:
-  --list         只列出結果,不進入互動清理(clean、dev)
+  --list         只列出結果,不進入互動清理(clean、dev、orphan)
+  --json         以 JSON 輸出結果(clean、dev、orphan、mem)
   [路徑]         analyze 與 dev 的起始目錄,預設為家目錄`))
 }
 

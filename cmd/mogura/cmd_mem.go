@@ -13,10 +13,13 @@ const topN = 15
 
 func runMem(args []string) error {
 	action := ""
+	jsonOut := false
 	for _, a := range args {
 		switch a {
 		case "--drop-caches", "--swap-reset":
 			action = a
+		case "--json":
+			jsonOut = true
 		default:
 			usage()
 			return fmt.Errorf(i18n.T("未知選項: %s"), a)
@@ -26,6 +29,13 @@ func runMem(args []string) error {
 	before, err := memory.Read()
 	if err != nil {
 		return err
+	}
+	if jsonOut {
+		procs, err := memory.Top(topN)
+		if err != nil {
+			return err
+		}
+		return printMemJSON(before, procs)
 	}
 	printMemStats(before)
 

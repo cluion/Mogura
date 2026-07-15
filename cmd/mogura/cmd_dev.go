@@ -20,11 +20,13 @@ func runDev(args []string) error {
 		return fmt.Errorf(i18n.T("無法取得家目錄: %w"), err)
 	}
 	root := home
-	listOnly := false
+	listOnly, jsonOut := false, false
 	for _, a := range args {
 		switch {
 		case a == "--list":
 			listOnly = true
+		case a == "--json":
+			jsonOut = true
 		case strings.HasPrefix(a, "-"):
 			usage()
 			return fmt.Errorf(i18n.T("未知選項: %s"), a)
@@ -52,6 +54,9 @@ func runDev(args []string) error {
 	}
 	sort.SliceStable(junks, func(a, b int) bool { return junks[a].Size > junks[b].Size })
 
+	if jsonOut {
+		return printDevJSON(junks)
+	}
 	if listOnly || !isTTY() {
 		printDevList(junks, abs)
 		return nil
