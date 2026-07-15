@@ -41,7 +41,7 @@ mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
 mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
 mogura monitor       # 即時系統監控(CPU、記憶體、磁碟、網路)
 mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
-mogura config        # 開啟設定(語言);TUI 內也可按 , 呼出
+mogura config        # 開啟設定(語言、刪除方式);TUI 內也可按 , 呼出
 mogura completion bash|zsh|fish  # 輸出 shell 補全腳本
 ```
 
@@ -52,6 +52,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 ```
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
+- 設定中可改為「移至垃圾桶」:刪除走系統垃圾桶(gio trash / XDG Trash),留一層反悔空間
 - 使用者層項目(快取、垃圾桶)不需要 root;標 🔒 的系統層項目才會要求 sudo
 - 數字是誠實的 `du` 口徑:實際磁碟佔用(`st_blocks`)、硬連結只計一次
 - 清理規則是宣告式 YAML(`internal/rules/data/`),新增規則不用改程式碼

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"mogura/internal/i18n"
+	"mogura/internal/trash"
 )
 
 // ItemOutcome 是單一規則的執行結果,供上層逐項回報。
@@ -17,9 +18,10 @@ type ItemOutcome struct {
 }
 
 // Execute 依序執行選定規則的清理,回傳釋放量與逐項結果。
-func Execute(selected []Result) (freed int64, outcomes []ItemOutcome) {
+// useTrash 為真時,路徑型刪除改移入垃圾桶(action 型規則不受影響)。
+func Execute(selected []Result, useTrash bool) (freed int64, outcomes []ItemOutcome) {
 	for _, res := range selected {
-		err := executeOne(res)
+		err := executeOne(res, useTrash)
 		if err == nil && res.Known {
 			freed += res.Size
 		}
@@ -28,7 +30,7 @@ func Execute(selected []Result) (freed int64, outcomes []ItemOutcome) {
 	return freed, outcomes
 }
 
-func executeOne(res Result) error {
+func executeOne(res Result, useTrash bool) error {
 	r := res.Rule
 	if r.Action != "" {
 		// Action 來自 go:embed 的內建規則,非使用者輸入;若未來支援
@@ -45,13 +47,21 @@ func executeOne(res Result) error {
 		return nil
 	}
 
+	// 垃圾桶模式只適用使用者層規則;清空垃圾桶本身永遠直接刪,避免循環。
+	toTrash := useTrash && !r.Root && r.ID != "trash"
 	var failed []string
 	for _, t := range res.Targets {
 		if err := guardPath(t, r.Root); err != nil {
 			failed = append(failed, fmt.Sprintf("%s(%s)", t, err))
 			continue
 		}
-		if err := os.RemoveAll(t); err != nil {
+		var err error
+		if toTrash {
+			err = trash.Put(t)
+		} else {
+			err = os.RemoveAll(t)
+		}
+		if err != nil {
 			failed = append(failed, t)
 		}
 	}

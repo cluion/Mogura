@@ -10,7 +10,11 @@ import (
 
 type Config struct {
 	Language string `yaml:"language"` // auto | zh | en
+	Delete   string `yaml:"delete"`   // direct | trash
 }
+
+// UseTrash 回報刪除是否走垃圾桶。
+func (c Config) UseTrash() bool { return c.Delete == "trash" }
 
 // Path 回傳設定檔路徑(依 XDG 慣例)。
 func Path() (string, error) {
@@ -23,7 +27,7 @@ func Path() (string, error) {
 
 // Load 讀取設定;檔案不存在或損壞時回傳預設值,不阻擋主流程。
 func Load() Config {
-	cfg := Config{Language: "auto"}
+	cfg := Config{Language: "auto", Delete: "direct"}
 	p, err := Path()
 	if err != nil {
 		return cfg
@@ -35,6 +39,9 @@ func Load() Config {
 	_ = yaml.Unmarshal(raw, &cfg)
 	if cfg.Language == "" {
 		cfg.Language = "auto"
+	}
+	if cfg.Delete != "trash" {
+		cfg.Delete = "direct"
 	}
 	return cfg
 }

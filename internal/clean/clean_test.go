@@ -233,3 +233,68 @@ func TestWalkLatestMtimeAndProgress(t *testing.T) {
 		t.Errorf("progress = %d bytes / %d files, 預期 %d / 2", prog.Bytes(), prog.Files(), want)
 	}
 }
+
+func TestExecuteTrashMode(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Skip("無家目錄")
+	}
+	base, err := os.MkdirTemp(home, ".mogura-test-*")
+	if err != nil {
+		t.Skip("家目錄不可寫")
+	}
+	t.Cleanup(func() { os.RemoveAll(base) })
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)               // 沙箱化垃圾桶
+	t.Setenv("PATH", filepath.Join(data, "nope")) // 遮掉 gio,走內建 XDG 實作
+
+	target := filepath.Join(base, "cache")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(target, "junk"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	res := Result{Rule: rules.Rule{ID: "x", Name: "測試"}, Targets: []string{target}, Size: 1, Known: true}
+	freed, outcomes := Execute([]Result{res}, true)
+	if freed != 1 || len(outcomes) != 1 || outcomes[0].Err != nil {
+		t.Fatalf("freed=%d outcomes=%+v", freed, outcomes)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatal("原路徑應已移走")
+	}
+	if _, err := os.Stat(filepath.Join(data, "Trash", "files", "cache", "junk")); err != nil {
+		t.Fatalf("垃圾桶內應有完整目錄: %v", err)
+	}
+}
+
+func TestExecuteTrashRuleAlwaysDirect(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Skip("無家目錄")
+	}
+	base, err := os.MkdirTemp(home, ".mogura-test-*")
+	if err != nil {
+		t.Skip("家目錄不可寫")
+	}
+	t.Cleanup(func() { os.RemoveAll(base) })
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)
+
+	target := filepath.Join(base, "trashed-item")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	res := Result{Rule: rules.Rule{ID: "trash", Name: "垃圾桶"}, Targets: []string{target}, Size: 1, Known: true}
+	if _, outcomes := Execute([]Result{res}, true); outcomes[0].Err != nil {
+		t.Fatal(outcomes[0].Err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatal("trash 規則應直接刪除")
+	}
+	if _, err := os.Stat(filepath.Join(data, "Trash", "files", "trashed-item")); err == nil {
+		t.Fatal("trash 規則不應把垃圾丟回垃圾桶")
+	}
+}

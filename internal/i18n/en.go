@@ -20,7 +20,7 @@ var en = map[string]string{
   orphan     找出已解除安裝軟體留下的孤兒設定檔
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
-  config     開啟設定(語言)
+  config     開啟設定(語言、刪除方式)
   completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
@@ -36,7 +36,7 @@ Commands:
   orphan     find config files left by uninstalled software
   monitor    live system monitor (CPU, memory, disk, network)
   mem        top memory consumers; --drop-caches / --swap-reset
-  config     open settings (language)
+  config     open settings (language, delete mode)
   completion print shell completion script (bash|zsh|fish)
   version    show version
 
@@ -49,9 +49,11 @@ Options:
 	"\n將清理以下項目:": "\nAbout to clean:",
 	"預估釋放: %s\n": "Estimated space to free: %s\n",
 	"部分項目需要 sudo,執行時可能要求輸入密碼。": "Some items need sudo; you may be asked for your password.",
-	"確定執行?[y/N] ":      "Proceed? [y/N] ",
-	"\n✨ 完成,共釋放約 %s\n": "\n✨ Done, freed about %s\n",
-	"已掃描 %s · %s 個檔案":  "scanned %s · %s files",
+	"確定執行?[y/N] ":          "Proceed? [y/N] ",
+	"\n✨ 完成,共釋放約 %s\n":     "\n✨ Done, freed about %s\n",
+	"\n✨ 完成,約 %s 已移至垃圾桶\n": "\n✨ Done, moved about %s to trash\n",
+	"🗑 垃圾桶模式:項目會移至垃圾桶,可還原(action 型項目除外)。": "🗑 Trash mode: items go to the trash and can be restored (except action-based items).",
+	"已掃描 %s · %s 個檔案": "scanned %s · %s files",
 
 	// clean
 	"掃描系統垃圾中...":         "Scanning system junk...",
@@ -115,8 +117,10 @@ Options:
 	"(空目錄)":                                 "(empty directory)",
 	"backspace 返回上層 · q 離開":                 "backspace go up · q quit",
 	"刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消": "Delete %s (%s)? This cannot be undone.  y confirm · any other key cancels",
-	"刪除中...":                    "Deleting...",
-	"已刪除 %s,釋放 %s":              "Deleted %s, freed %s",
+	"刪除中...":          "Deleting...",
+	"已刪除 %s,釋放 %s":    "Deleted %s, freed %s",
+	"已將 %s 移至垃圾桶(%s)": "Moved %s to trash (%s)",
+	"將 %s(%s)移至垃圾桶?  y 確認 · 其他鍵取消": "Move %s (%s) to trash?  y confirm · any other key cancels",
 	"刪除失敗:":                     "delete failed: ",
 	"已取消刪除。":                    "Deletion cancelled.",
 	"計算中 %d/%d · 已掃描 %s · %s 檔": "computing %d/%d · scanned %s · %s files",
@@ -130,16 +134,20 @@ Options:
 	"拒絕刪除家目錄":     "refusing to delete the home directory",
 
 	// ui / settings
-	"🦡 Mogura — 設定":      "🦡 Mogura — Settings",
-	"語言":                 "Language",
-	"自動(跟隨系統)":           "Auto (follow system)",
-	"設定儲存失敗:":            "failed to save settings: ",
-	"設定檔:%s":             "Config file: %s",
-	"\n←→ 切換 · enter 確定": "\n←→ change · enter done",
-	"風險低":                "low risk",
-	"風險中":                "med risk",
-	"風險高":                "high risk",
-	"已選擇可回收: ":           "Selected reclaimable: ",
+	"🦡 Mogura — 設定": "🦡 Mogura — Settings",
+	"語言":            "Language",
+	"自動(跟隨系統)":      "Auto (follow system)",
+	"設定儲存失敗:":       "failed to save settings: ",
+	"設定檔:%s":        "Config file: %s",
+	"\n↑↓ 選擇 · ←→ 切換 · enter 確定": "\n↑↓ select · ←→ change · enter done",
+	"刪除方式":  "Delete mode",
+	"直接刪除":  "Delete directly",
+	"移至垃圾桶": "Move to trash",
+	"與垃圾桶不在同一分割區,無法移入(可在設定改回直接刪除)": "not on the same partition as the trash; cannot move (switch back to direct delete in settings)",
+	"風險低":      "low risk",
+	"風險中":      "med risk",
+	"風險高":      "high risk",
+	"已選擇可回收: ": "Selected reclaimable: ",
 	"\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · , 設定 · q 離開 · 🔒 需要 sudo": "\nspace select · a all · n none · enter run · , settings · q quit · 🔒 needs sudo",
 	"互動介面啟動失敗: %w": "failed to start interactive UI: %w",
 

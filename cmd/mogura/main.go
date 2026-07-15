@@ -66,7 +66,7 @@ func usage() {
   orphan     找出已解除安裝軟體留下的孤兒設定檔
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
-  config     開啟設定(語言)
+  config     開啟設定(語言、刪除方式)
   completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
@@ -154,12 +154,16 @@ func confirmAndRun(picked []clean.Result) error {
 		}
 		needRoot = needRoot || r.Rule.Root
 	}
+	useTrash := config.Load().UseTrash()
+	if useTrash {
+		fmt.Println(i18n.T("🗑 垃圾桶模式:項目會移至垃圾桶,可還原(action 型項目除外)。"))
+	}
 	if !confirm(labels, sizes, needRoot) {
 		fmt.Println(i18n.T("已取消。"))
 		return nil
 	}
 
-	freed, outcomes := clean.Execute(picked)
+	freed, outcomes := clean.Execute(picked, useTrash)
 	fmt.Println()
 	for _, o := range outcomes {
 		if o.Err != nil {
@@ -168,6 +172,10 @@ func confirmAndRun(picked []clean.Result) error {
 			fmt.Printf("  ✓ %s\n", o.Result.Rule.Name)
 		}
 	}
-	fmt.Print(i18n.Tf("\n✨ 完成,共釋放約 %s\n", clean.Humanize(freed)))
+	if useTrash {
+		fmt.Print(i18n.Tf("\n✨ 完成,約 %s 已移至垃圾桶\n", clean.Humanize(freed)))
+	} else {
+		fmt.Print(i18n.Tf("\n✨ 完成,共釋放約 %s\n", clean.Humanize(freed)))
+	}
 	return nil
 }

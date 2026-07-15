@@ -9,12 +9,18 @@ import (
 	"mogura/internal/i18n"
 )
 
-var langValues = []string{"auto", "zh", "en"}
+var (
+	langValues   = []string{"auto", "zh", "en"}
+	deleteValues = []string{"direct", "trash"}
+)
+
+const settingsRows = 2
 
 // Settings 是可嵌入各 TUI 的設定面板;變更即時生效並立刻存檔。
 type Settings struct {
 	cfg     config.Config
 	initial string
+	row     int
 	saveErr error
 }
 
@@ -31,26 +37,37 @@ func (s Settings) HandleKey(key tea.KeyMsg) (Settings, bool) {
 	switch key.String() {
 	case "enter", "q", "esc", ",", "ctrl+c":
 		return s, true // enter 確定返回;變更早已即時存檔
+	case "up", "k":
+		s.row = (s.row + settingsRows - 1) % settingsRows
+	case "down", "j":
+		s.row = (s.row + 1) % settingsRows
 	case "right", "l", " ":
-		s.cycleLang(1)
+		s.cycle(1)
 	case "left", "h":
-		s.cycleLang(-1)
+		s.cycle(-1)
 	}
 	return s, false
 }
 
-func (s *Settings) cycleLang(delta int) {
+func (s *Settings) cycle(delta int) {
+	if s.row == 0 {
+		s.cfg.Language = cycleValue(langValues, s.cfg.Language, delta)
+		i18n.Apply(s.cfg.Language) // 即時生效,整個 TUI 下一幀就換語言
+	} else {
+		s.cfg.Delete = cycleValue(deleteValues, s.cfg.Delete, delta)
+	}
+	s.saveErr = config.Save(s.cfg)
+}
+
+func cycleValue(values []string, current string, delta int) string {
 	idx := 0
-	for i, v := range langValues {
-		if v == s.cfg.Language {
+	for i, v := range values {
+		if v == current {
 			idx = i
 			break
 		}
 	}
-	idx = (idx + delta + len(langValues)) % len(langValues)
-	s.cfg.Language = langValues[idx]
-	i18n.Apply(s.cfg.Language) // 即時生效,整個 TUI 下一幀就換語言
-	s.saveErr = config.Save(s.cfg)
+	return values[(idx+delta+len(values))%len(values)]
 }
 
 func (s Settings) langLabel() string {
@@ -64,17 +81,34 @@ func (s Settings) langLabel() string {
 	}
 }
 
+func (s Settings) deleteLabel() string {
+	if s.cfg.UseTrash() {
+		return i18n.T("移至垃圾桶")
+	}
+	return i18n.T("直接刪除")
+}
+
 func (s Settings) View() string {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render(i18n.T("🦡 Mogura — 設定")) + "\n\n")
-	b.WriteString(cursorStyle.Render("❯ ") + i18n.T("語言") + "  " + totalStyle.Render(s.langLabel()) + "\n")
+	rows := []struct{ label, value string }{
+		{i18n.T("語言"), s.langLabel()},
+		{i18n.T("刪除方式"), s.deleteLabel()},
+	}
+	for i, r := range rows {
+		prefix := "  "
+		if i == s.row {
+			prefix = cursorStyle.Render("❯ ")
+		}
+		b.WriteString(prefix + r.label + "  " + totalStyle.Render(r.value) + "\n")
+	}
 	if s.saveErr != nil {
 		b.WriteString("\n" + i18n.T("設定儲存失敗:") + s.saveErr.Error() + "\n")
 	}
 	if p, err := config.Path(); err == nil {
 		b.WriteString("\n" + descStyle.Render(i18n.Tf("設定檔:%s", p)))
 	}
-	b.WriteString(helpStyle.Render(i18n.T("\n←→ 切換 · enter 確定")))
+	b.WriteString(helpStyle.Render(i18n.T("\n↑↓ 選擇 · ←→ 切換 · enter 確定")))
 	return b.String()
 }
 

@@ -13,7 +13,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"mogura/internal/clean"
+	"mogura/internal/config"
 	"mogura/internal/i18n"
+	"mogura/internal/trash"
 	"mogura/internal/ui"
 )
 
@@ -117,6 +119,7 @@ type browser struct {
 	stream      <-chan Entry // 目前目錄的統計串流
 	gen         int          // 串流世代,每次載入遞增
 	moved       bool         // 使用者是否動過游標;沒動過就錨定頂端看開票
+	useTrash    bool         // 刪除走垃圾桶(設定面板關閉時刷新)
 }
 
 // Browse 啟動磁碟分析瀏覽器,從 root 開始向下鑽。
@@ -127,7 +130,7 @@ func Browse(root string) error {
 	b := browser{
 		sizer: sizer, root: root, cwd: root,
 		loading: true, height: 24, prefetching: map[string]bool{},
-		scanProg: live,
+		scanProg: live, useTrash: config.Load().UseTrash(),
 	}
 	_, err := tea.NewProgram(b, tea.WithAltScreen()).Run()
 	return err
@@ -201,10 +204,13 @@ func waitStats(gen int, ch <-chan Entry) tea.Cmd {
 	}
 }
 
-func deleteEntry(e Entry) tea.Cmd {
+func deleteEntry(e Entry, useTrash bool) tea.Cmd {
 	return func() tea.Msg {
 		if err := deleteGuard(e.Path); err != nil {
 			return deletedMsg{entry: e, err: err}
+		}
+		if useTrash {
+			return deletedMsg{entry: e, err: trash.Put(e.Path)}
 		}
 		return deletedMsg{entry: e, err: os.RemoveAll(e.Path)}
 	}
@@ -287,7 +293,11 @@ func (b browser) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			b.status = dangerLine.Render(i18n.T("刪除失敗:") + msg.err.Error())
 			return b, nil
 		}
-		b.status = okLine.Render(i18n.Tf("已刪除 %s,釋放 %s", msg.entry.Name, clean.Humanize(msg.entry.Size)))
+		if b.useTrash {
+			b.status = okLine.Render(i18n.Tf("已將 %s 移至垃圾桶(%s)", msg.entry.Name, clean.Humanize(msg.entry.Size)))
+		} else {
+			b.status = okLine.Render(i18n.Tf("已刪除 %s,釋放 %s", msg.entry.Name, clean.Humanize(msg.entry.Size)))
+		}
 		b.sizer.Invalidate(msg.entry.Path)
 		b.loading = true
 		return b, tea.Batch(b.load(b.cwd), scanTick())
@@ -302,6 +312,7 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		s, closed := b.settings.HandleKey(key)
 		if closed {
 			b.settings = nil
+			b.useTrash = config.Load().UseTrash()
 		} else {
 			b.settings = &s
 		}
@@ -314,7 +325,7 @@ func (b browser) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if key.String() == "y" {
 			b.deleting = true
 			b.status = ""
-			return b, deleteEntry(target)
+			return b, deleteEntry(target, b.useTrash)
 		}
 		b.status = i18n.T("已取消刪除。")
 		return b, nil
@@ -435,8 +446,13 @@ func (b browser) View() string {
 
 	switch {
 	case b.confirm != nil:
-		sb.WriteString("\n" + dangerLine.Render(i18n.Tf("刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消",
-			b.confirm.Name, clean.Humanize(b.confirm.Size))))
+		prompt := i18n.Tf("刪除 %s(%s)?此操作無法復原  y 確認 · 其他鍵取消",
+			b.confirm.Name, clean.Humanize(b.confirm.Size))
+		if b.useTrash {
+			prompt = i18n.Tf("將 %s(%s)移至垃圾桶?  y 確認 · 其他鍵取消",
+				b.confirm.Name, clean.Humanize(b.confirm.Size))
+		}
+		sb.WriteString("\n" + dangerLine.Render(prompt))
 	case b.deleting:
 		sb.WriteString("\n" + i18n.T("刪除中..."))
 	case b.streaming:

@@ -41,7 +41,7 @@ mogura dev [path]     # scan build artifacts (node_modules, target, vendor...)
 mogura orphan        # find configs left behind by uninstalled software
 mogura monitor       # live system monitor (CPU, memory, disk, network)
 mogura mem           # top memory consumers; --drop-caches / --swap-reset
-mogura config        # open settings (language); or press , inside any TUI
+mogura config        # open settings (language, delete mode); or press , inside any TUI
 mogura completion bash|zsh|fish  # print shell completion script
 ```
 
@@ -52,6 +52,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 ```
 
 - Scans first and shows the size of every item; nothing is deleted until you select and confirm
+- Optional trash mode in settings: deletions go to the system trash (gio trash / XDG Trash) so you can undo
 - User-level items (caches, trash) never need root; items marked 🔒 ask for sudo per item
 - Sizes are honest `du` semantics: real disk usage (`st_blocks`), hardlinks counted once
 - Cleaning rules are declarative YAML (`internal/rules/data/`) — add a rule without touching code
