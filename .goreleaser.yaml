@@ -33,6 +33,26 @@ nfpms:
       - rpm
     bindir: /usr/bin
 
+aurs:
+  - name: mogura-bin
+    homepage: https://github.com/cluion/Mogura
+    description: Interactive disk cleaner and analyzer for Linux — dig out caches, build artifacts and orphaned configs
+    maintainers:
+      - Hugo <hugo@cluion.com>
+    license: MIT
+    private_key: "{{ .Env.AUR_KEY }}"
+    git_url: ssh://aur@aur.archlinux.org/mogura-bin.git
+    provides:
+      - mogura
+    conflicts:
+      - mogura
+    commit_author:
+      name: Hugo
+      email: hugo@cluion.com
+    package: |-
+      install -Dm755 ./mogura "${pkgdir}/usr/bin/mogura"
+      install -Dm644 ./LICENSE "${pkgdir}/usr/share/licenses/mogura-bin/LICENSE"
+
 checksum:
   name_template: checksums.txt
 
