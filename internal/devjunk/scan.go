@@ -39,8 +39,8 @@ type Junk struct {
 }
 
 // Scan 從 root 向下找建置產物。隱藏目錄(除了產物本身)一律跳過,
-// 找到的產物目錄不再深入。prog 可為 nil。
-func Scan(root string, prog *clean.Progress) ([]Junk, error) {
+// 找到的產物目錄不再深入。exclude 須為已展開的絕對路徑,prog 可為 nil。
+func Scan(root string, exclude []string, prog *clean.Progress) ([]Junk, error) {
 	var junks []Junk
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -48,6 +48,9 @@ func Scan(root string, prog *clean.Progress) ([]Junk, error) {
 		}
 		if !d.IsDir() || path == root {
 			return nil
+		}
+		if clean.Excluded(path, exclude) {
+			return filepath.SkipDir
 		}
 		if k, ok := match(path, d.Name()); ok {
 			junks = append(junks, Junk{Path: path, Kind: k})

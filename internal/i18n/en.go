@@ -20,7 +20,7 @@ var en = map[string]string{
   orphan     找出已解除安裝軟體留下的孤兒設定檔
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
-  config     開啟設定(語言、刪除方式)
+  config     開啟設定
   completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
@@ -36,7 +36,7 @@ Commands:
   orphan     find config files left by uninstalled software
   monitor    live system monitor (CPU, memory, disk, network)
   mem        top memory consumers; --drop-caches / --swap-reset
-  config     open settings (language, delete mode)
+  config     open settings
   completion print shell completion script (bash|zsh|fish)
   version    show version
 
@@ -139,10 +139,13 @@ Options:
 	"自動(跟隨系統)":      "Auto (follow system)",
 	"設定儲存失敗:":       "failed to save settings: ",
 	"設定檔:%s":        "Config file: %s",
+	"排除清單(exclude)等進階設定請直接編輯設定檔": "Advanced options like the exclude list are edited in the config file directly",
 	"\n↑↓ 選擇 · ←→ 切換 · enter 確定": "\n↑↓ select · ←→ change · enter done",
-	"刪除方式":  "Delete mode",
-	"直接刪除":  "Delete directly",
-	"移至垃圾桶": "Move to trash",
+	"刪除方式":       "Delete mode",
+	"直接刪除":       "Delete directly",
+	"移至垃圾桶":      "Move to trash",
+	"journal 保留": "journal retention",
+	"%d 天":       "%d days",
 	"與垃圾桶不在同一分割區,無法移入(可在設定改回直接刪除)": "not on the same partition as the trash; cannot move (switch back to direct delete in settings)",
 	"風險低":      "low risk",
 	"風險中":      "med risk",
@@ -188,7 +191,7 @@ Options:
 	"Zypper 套件快取":                 "Zypper package cache",
 	"zypper 的套件與中繼資料快取":           "zypper package and metadata cache",
 	"systemd 日誌":                  "systemd journal",
-	"清除 7 天以前的 journal 日誌":        "Clears journal logs older than 7 days",
+	"清除 {days} 天以前的 journal 日誌":   "Clears journal logs older than {days} days",
 	"當機報告":                        "Crash reports",
 	"/var/crash 中 apport 產生的當機傾印": "Apport crash dumps in /var/crash",
 	"Snap 舊版本":                    "Old snap revisions",

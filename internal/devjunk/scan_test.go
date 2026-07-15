@@ -37,7 +37,7 @@ func TestScan(t *testing.T) {
 	hidden := filepath.Join(root, ".hidden", "node_modules")
 	mkdirWithFile(t, hidden, filepath.Join(root, ".hidden", "package.json"))
 
-	junks, err := Scan(root, nil)
+	junks, err := Scan(root, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,11 +73,30 @@ func TestScanSkipsInsideJunk(t *testing.T) {
 	inner := filepath.Join(outer, "pkg", "node_modules")
 	mkdirWithFile(t, inner, filepath.Join(outer, "pkg", "package.json"))
 
-	junks, err := Scan(root, nil)
+	junks, err := Scan(root, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(junks) != 1 || junks[0].Path != outer {
 		t.Errorf("只應列出最外層 node_modules,實際 %+v", junks)
+	}
+}
+
+func TestScanExclude(t *testing.T) {
+	root := t.TempDir()
+	for _, p := range []string{"a/node_modules", "skip/b/node_modules"} {
+		if err := os.MkdirAll(filepath.Join(root, p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, filepath.Dir(p), "package.json"), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	junks, err := Scan(root, []string{filepath.Join(root, "skip")}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(junks) != 1 || filepath.Base(filepath.Dir(junks[0].Path)) != "a" {
+		t.Errorf("排除清單下的產物不應列出: %+v", junks)
 	}
 }

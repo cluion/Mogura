@@ -43,7 +43,7 @@ func runDev(args []string) error {
 	var junks []devjunk.Junk
 	var scanErr error
 	withProgress(i18n.Tf("掃描 %s 的建置產物中...", abs), prog, func() {
-		junks, scanErr = devjunk.Scan(abs, prog)
+		junks, scanErr = devjunk.Scan(abs, excludePaths(), prog)
 	})
 	if scanErr != nil {
 		return scanErr

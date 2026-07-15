@@ -9,9 +9,13 @@ import (
 )
 
 type Config struct {
-	Language string `yaml:"language"` // auto | zh | en
-	Delete   string `yaml:"delete"`   // direct | trash
+	Language    string   `yaml:"language"`          // auto | zh | en
+	Delete      string   `yaml:"delete"`            // direct | trash
+	JournalDays int      `yaml:"journal_days"`      // journal 日誌保留天數
+	Exclude     []string `yaml:"exclude,omitempty"` // 掃描排除清單,支援 ~ 開頭
 }
+
+const defaultJournalDays = 7
 
 // UseTrash 回報刪除是否走垃圾桶。
 func (c Config) UseTrash() bool { return c.Delete == "trash" }
@@ -27,7 +31,7 @@ func Path() (string, error) {
 
 // Load 讀取設定;檔案不存在或損壞時回傳預設值,不阻擋主流程。
 func Load() Config {
-	cfg := Config{Language: "auto", Delete: "direct"}
+	cfg := Config{Language: "auto", Delete: "direct", JournalDays: defaultJournalDays}
 	p, err := Path()
 	if err != nil {
 		return cfg
@@ -42,6 +46,9 @@ func Load() Config {
 	}
 	if cfg.Delete != "trash" {
 		cfg.Delete = "direct"
+	}
+	if cfg.JournalDays < 1 || cfg.JournalDays > 365 {
+		cfg.JournalDays = defaultJournalDays
 	}
 	return cfg
 }

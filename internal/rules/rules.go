@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -36,9 +37,17 @@ type Rule struct {
 
 var validRisks = map[string]bool{"low": true, "medium": true, "high": true}
 
-// Load 讀取所有內嵌規則檔,驗證後回傳。
+// Options 帶入使用者設定調整規則:全域排除清單與 {days} 佔位符的值。
+type Options struct {
+	Exclude     []string // 併入每條路徑型規則的 exclude
+	JournalDays int      // 代入 {days},<1 時用預設 7
+}
+
+const defaultJournalDays = 7
+
+// Load 讀取所有內嵌規則檔,驗證後依 opt 調整並回傳。
 // Requires 指定的指令不存在時,該規則會被略過。
-func Load() ([]Rule, error) {
+func Load(opt Options) ([]Rule, error) {
 	entries, err := dataFS.ReadDir("data")
 	if err != nil {
 		return nil, fmt.Errorf("讀取內嵌規則目錄失敗: %w", err)
@@ -71,10 +80,26 @@ func Load() ([]Rule, error) {
 			// 在載入點翻譯一次,下游顯示、確認、回報全部自動生效
 			r.Name = i18n.T(r.Name)
 			r.Description = i18n.T(r.Description)
-			all = append(all, r)
+			all = append(all, r.withOptions(opt))
 		}
 	}
 	return all, nil
+}
+
+// withOptions 套用使用者設定。{days} 在翻譯後才代入,
+// 讓 i18n 對照表的鍵維持含佔位符的原文。
+func (r Rule) withOptions(opt Options) Rule {
+	days := opt.JournalDays
+	if days < 1 {
+		days = defaultJournalDays
+	}
+	d := strconv.Itoa(days)
+	r.Description = strings.ReplaceAll(r.Description, "{days}", d)
+	r.Action = strings.ReplaceAll(r.Action, "{days}", d)
+	if len(r.Paths) > 0 {
+		r.Exclude = append(r.Exclude, opt.Exclude...)
+	}
+	return r
 }
 
 func validate(r Rule) error {

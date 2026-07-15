@@ -11,6 +11,7 @@ import (
 	"mogura/internal/clean"
 	"mogura/internal/config"
 	"mogura/internal/i18n"
+	"mogura/internal/rules"
 )
 
 // 正式版本由 GoReleaser 以 ldflags 注入
@@ -66,7 +67,7 @@ func usage() {
   orphan     找出已解除安裝軟體留下的孤兒設定檔
   monitor    即時系統監控(CPU、記憶體、磁碟、網路)
   mem        記憶體大戶排行;--drop-caches / --swap-reset 釋放
-  config     開啟設定(語言、刪除方式)
+  config     開啟設定
   completion 輸出 shell 補全腳本(bash|zsh|fish)
   version    顯示版本
 
@@ -136,6 +137,21 @@ func withProgress(label string, prog *clean.Progress, fn func()) {
 				i18n.Tf("已掃描 %s · %s 個檔案", clean.Humanize(prog.Bytes()), clean.GroupDigits(prog.Files())))
 		}
 	}
+}
+
+// ruleOptions 把使用者設定轉成規則載入選項。
+func ruleOptions() rules.Options {
+	cfg := config.Load()
+	return rules.Options{Exclude: cfg.Exclude, JournalDays: cfg.JournalDays}
+}
+
+// excludePaths 回傳已展開的全域排除清單。
+func excludePaths() []string {
+	var out []string
+	for _, e := range config.Load().Exclude {
+		out = append(out, rules.ExpandHome(e))
+	}
+	return out
 }
 
 // confirmAndRun 對選定項目做最終確認、執行並逐項回報。

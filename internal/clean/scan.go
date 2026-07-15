@@ -153,17 +153,19 @@ func displayPath(p string) string {
 }
 
 func scanPaths(r rules.Rule, prog *Progress) (targets []string, sizes []int64) {
-	excluded := map[string]bool{}
+	var excluded []string
 	for _, ex := range r.Exclude {
-		matches, _ := filepath.Glob(rules.ExpandHome(ex))
-		for _, m := range matches {
-			excluded[m] = true
+		p := rules.ExpandHome(ex)
+		if matches, _ := filepath.Glob(p); len(matches) > 0 {
+			excluded = append(excluded, matches...)
+		} else {
+			excluded = append(excluded, p) // 路徑尚不存在也保留,前綴比對仍有效
 		}
 	}
 	for _, p := range r.Paths {
 		matches, _ := filepath.Glob(rules.ExpandHome(p))
 		for _, m := range matches {
-			if excluded[m] {
+			if Excluded(m, excluded) {
 				continue
 			}
 			targets = append(targets, m)
@@ -172,6 +174,17 @@ func scanPaths(r rules.Rule, prog *Progress) (targets []string, sizes []int64) {
 		}
 	}
 	return targets, sizes
+}
+
+// Excluded 回報 path 是否等於任一排除路徑、或位於其之下。
+// excludes 須為已展開的絕對路徑。
+func Excluded(path string, excludes []string) bool {
+	for _, ex := range excludes {
+		if path == ex || strings.HasPrefix(path, ex+string(os.PathSeparator)) {
+			return true
+		}
+	}
+	return false
 }
 
 // GroupDigits 加上千分位,大數字才讀得出量級。

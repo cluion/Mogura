@@ -42,11 +42,11 @@
 
 - id: journal-logs
   name: systemd 日誌
-  description: 清除 7 天以前的 journal 日誌
+  description: 清除 {days} 天以前的 journal 日誌
   requires: journalctl
   paths:
     - "/var/log/journal"
-  action: "journalctl --vacuum-time=7d"
+  action: "journalctl --vacuum-time={days}d"
   risk: low
   root: true
 

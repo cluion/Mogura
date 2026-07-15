@@ -7,7 +7,7 @@ import (
 )
 
 func TestLoadEmbeddedRules(t *testing.T) {
-	rs, err := Load()
+	rs, err := Load(Options{})
 	if err != nil {
 		t.Fatalf("內嵌規則載入失敗: %v", err)
 	}
@@ -60,5 +60,34 @@ func TestExpandHome(t *testing.T) {
 	}
 	if got := ExpandHome("~user/x"); got != "~user/x" {
 		t.Errorf("~user 形式不應被展開: %s", got)
+	}
+}
+
+func TestWithOptions(t *testing.T) {
+	r := Rule{
+		ID: "journal-logs", Description: "清除 {days} 天以前的 journal 日誌",
+		Action: "journalctl --vacuum-time={days}d",
+	}
+	got := r.withOptions(Options{JournalDays: 14})
+	if got.Action != "journalctl --vacuum-time=14d" {
+		t.Errorf("Action = %q", got.Action)
+	}
+	if got.Description != "清除 14 天以前的 journal 日誌" {
+		t.Errorf("Description = %q", got.Description)
+	}
+
+	// 未設定時用預設 7
+	if got := r.withOptions(Options{}); got.Action != "journalctl --vacuum-time=7d" {
+		t.Errorf("預設 Action = %q", got.Action)
+	}
+
+	// 全域排除只併入路徑型規則
+	p := Rule{ID: "p", Paths: []string{"~/x"}, Exclude: []string{"~/x/keep"}}
+	got = p.withOptions(Options{Exclude: []string{"~/y"}})
+	if len(got.Exclude) != 2 || got.Exclude[1] != "~/y" {
+		t.Errorf("Exclude = %v", got.Exclude)
+	}
+	if got := r.withOptions(Options{Exclude: []string{"~/y"}}); len(got.Exclude) != 0 {
+		t.Errorf("action 型規則不應併入排除: %v", got.Exclude)
 	}
 }

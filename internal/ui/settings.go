@@ -10,27 +10,31 @@ import (
 )
 
 var (
-	langValues   = []string{"auto", "zh", "en"}
-	deleteValues = []string{"direct", "trash"}
+	langValues       = []string{"auto", "zh", "en"}
+	deleteValues     = []string{"direct", "trash"}
+	journalDayValues = []int{3, 7, 14, 30}
 )
 
-const settingsRows = 2
+const settingsRows = 3
 
 // Settings 是可嵌入各 TUI 的設定面板;變更即時生效並立刻存檔。
 type Settings struct {
 	cfg     config.Config
-	initial string
+	initial config.Config
 	row     int
 	saveErr error
 }
 
 func NewSettings() Settings {
 	cfg := config.Load()
-	return Settings{cfg: cfg, initial: cfg.Language}
+	return Settings{cfg: cfg, initial: cfg}
 }
 
-// Changed 回報開啟面板以來語言是否有變,供宿主決定要不要重建畫面。
-func (s Settings) Changed() bool { return s.cfg.Language != s.initial }
+// Changed 回報開啟面板以來,會影響已顯示規則文字的設定是否有變,
+// 供宿主決定要不要重建畫面(語言、journal 天數都會反映在規則名稱與說明)。
+func (s Settings) Changed() bool {
+	return s.cfg.Language != s.initial.Language || s.cfg.JournalDays != s.initial.JournalDays
+}
 
 // HandleKey 處理按鍵,回傳更新後的面板與「是否關閉」。
 func (s Settings) HandleKey(key tea.KeyMsg) (Settings, bool) {
@@ -50,11 +54,21 @@ func (s Settings) HandleKey(key tea.KeyMsg) (Settings, bool) {
 }
 
 func (s *Settings) cycle(delta int) {
-	if s.row == 0 {
+	switch s.row {
+	case 0:
 		s.cfg.Language = cycleValue(langValues, s.cfg.Language, delta)
 		i18n.Apply(s.cfg.Language) // 即時生效,整個 TUI 下一幀就換語言
-	} else {
+	case 1:
 		s.cfg.Delete = cycleValue(deleteValues, s.cfg.Delete, delta)
+	case 2:
+		idx := 1 // 手動改過的自訂天數不在清單裡,從預設 7 起跳
+		for i, v := range journalDayValues {
+			if v == s.cfg.JournalDays {
+				idx = i
+				break
+			}
+		}
+		s.cfg.JournalDays = journalDayValues[(idx+delta+len(journalDayValues))%len(journalDayValues)]
 	}
 	s.saveErr = config.Save(s.cfg)
 }
@@ -94,6 +108,7 @@ func (s Settings) View() string {
 	rows := []struct{ label, value string }{
 		{i18n.T("語言"), s.langLabel()},
 		{i18n.T("刪除方式"), s.deleteLabel()},
+		{i18n.T("journal 保留"), i18n.Tf("%d 天", s.cfg.JournalDays)},
 	}
 	for i, r := range rows {
 		prefix := "  "
@@ -107,6 +122,7 @@ func (s Settings) View() string {
 	}
 	if p, err := config.Path(); err == nil {
 		b.WriteString("\n" + descStyle.Render(i18n.Tf("設定檔:%s", p)))
+		b.WriteString("\n" + descStyle.Render(i18n.T("排除清單(exclude)等進階設定請直接編輯設定檔")))
 	}
 	b.WriteString(helpStyle.Render(i18n.T("\n↑↓ 選擇 · ←→ 切換 · enter 確定")))
 	return b.String()

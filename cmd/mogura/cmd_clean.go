@@ -23,7 +23,7 @@ func runClean(args []string) error {
 		}
 	}
 
-	rs, err := rules.Load()
+	rs, err := rules.Load(ruleOptions())
 	if err != nil {
 		return err
 	}
@@ -61,8 +61,8 @@ func runClean(args []string) error {
 			return err
 		}
 		if restart {
-			// 語言已切換:重載規則取得新語言文字,原地重貼標籤,不重掃
-			if fresh, err := rules.Load(); err == nil {
+			// 語言或 journal 天數已變:重載規則取得新文字,原地重貼標籤,不重掃
+			if fresh, err := rules.Load(ruleOptions()); err == nil {
 				clean.Relabel(results, fresh)
 			}
 			continue

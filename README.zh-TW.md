@@ -41,7 +41,7 @@ mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
 mogura orphan        # 找出已解除安裝軟體留下的孤兒設定檔
 mogura monitor       # 即時系統監控(CPU、記憶體、磁碟、網路)
 mogura mem           # 記憶體大戶排行;--drop-caches / --swap-reset 釋放
-mogura config        # 開啟設定(語言、刪除方式);TUI 內也可按 , 呼出
+mogura config        # 開啟設定;TUI 內也可按 , 呼出
 mogura completion bash|zsh|fish  # 輸出 shell 補全腳本
 ```
 
@@ -56,6 +56,18 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 - 使用者層項目(快取、垃圾桶)不需要 root;標 🔒 的系統層項目才會要求 sudo
 - 數字是誠實的 `du` 口徑:實際磁碟佔用(`st_blocks`)、硬連結只計一次
 - 清理規則是宣告式 YAML(`internal/rules/data/`),新增規則不用改程式碼
+
+## 設定
+
+`~/.config/mogura/config.yaml`(`mogura config` 或 TUI 內按 `,` 可改前三項):
+
+```yaml
+language: auto     # auto | zh | en
+delete: direct     # direct | trash(刪除移至系統垃圾桶,可還原)
+journal_days: 7    # journal 日誌保留天數
+exclude:           # 掃描排除清單,clean 與 dev 都會跳過(支援 ~)
+  - ~/.cache/huggingface
+```
 
 ## 開發
 

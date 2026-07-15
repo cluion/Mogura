@@ -41,7 +41,7 @@ mogura dev [path]     # scan build artifacts (node_modules, target, vendor...)
 mogura orphan        # find configs left behind by uninstalled software
 mogura monitor       # live system monitor (CPU, memory, disk, network)
 mogura mem           # top memory consumers; --drop-caches / --swap-reset
-mogura config        # open settings (language, delete mode); or press , inside any TUI
+mogura config        # open settings; or press , inside any TUI
 mogura completion bash|zsh|fish  # print shell completion script
 ```
 
@@ -56,6 +56,18 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 - User-level items (caches, trash) never need root; items marked 🔒 ask for sudo per item
 - Sizes are honest `du` semantics: real disk usage (`st_blocks`), hardlinks counted once
 - Cleaning rules are declarative YAML (`internal/rules/data/`) — add a rule without touching code
+
+## Configuration
+
+`~/.config/mogura/config.yaml` (the first three are editable via `mogura config` or `,` inside any TUI):
+
+```yaml
+language: auto     # auto | zh | en
+delete: direct     # direct | trash (deletions go to the system trash, restorable)
+journal_days: 7    # journal log retention in days
+exclude:           # paths skipped by clean and dev scans (~ supported)
+  - ~/.cache/huggingface
+```
 
 ## Development
 

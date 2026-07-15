@@ -298,3 +298,33 @@ func TestExecuteTrashRuleAlwaysDirect(t *testing.T) {
 		t.Fatal("trash 規則不應把垃圾丟回垃圾桶")
 	}
 }
+
+func TestExcludedPrefix(t *testing.T) {
+	ex := []string{"/home/u/.cache/keep"}
+	for path, want := range map[string]bool{
+		"/home/u/.cache/keep":     true,
+		"/home/u/.cache/keep/sub": true,
+		"/home/u/.cache/keepsake": false,
+		"/home/u/.cache/other":    false,
+	} {
+		if got := Excluded(path, ex); got != want {
+			t.Errorf("Excluded(%q) = %v, 預期 %v", path, got, want)
+		}
+	}
+}
+
+func TestScanPathsExcludeNonexistentPrefix(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "proj")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	r := rules.Rule{
+		ID: "t", Name: "T", Risk: "low",
+		Paths:   []string{filepath.Join(dir, "*")},
+		Exclude: []string{dir}, // 排除整個上層,glob 展開外仍應以前綴擋下
+	}
+	if targets, _ := scanPaths(r, nil); len(targets) != 0 {
+		t.Errorf("targets = %v, 預期全部被排除", targets)
+	}
+}
