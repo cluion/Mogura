@@ -25,10 +25,14 @@ func main() {
 	cmd := "clean"
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		cmd, args = args[0], args[1:]
+	} else if len(args) == 0 && isTTY() && isStdoutTTY() {
+		cmd = "dashboard" // 純 mogura 且在終端機:開總覽;管線輸出維持 clean 列表
 	}
 
 	var err error
 	switch cmd {
+	case "dashboard":
+		err = runDashboard()
 	case "clean":
 		err = runClean(args)
 	case "analyze":
@@ -60,8 +64,10 @@ func main() {
 func usage() {
 	fmt.Println(i18n.T(`用法: mogura [指令] [選項]
 
+無指令時開啟總覽選單(終端機環境)。
+
 指令:
-  clean      掃描並清理系統垃圾(預設)
+  clean      掃描並清理系統垃圾
   analyze    磁碟空間分析,互動瀏覽各目錄佔用
   dev        掃描開發專案的建置產物(node_modules、target、vendor...)
   orphan     找出已解除安裝軟體留下的孤兒設定檔
@@ -116,7 +122,7 @@ func isTTY() bool {
 // withProgress 在 fn 執行期間即時顯示掃描進度;
 // stdout 不是終端機(如管線輸出)時安靜執行,避免 \r 汙染管線。
 func withProgress(label string, prog *clean.Progress, fn func()) {
-	if fi, err := os.Stdout.Stat(); err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+	if !isStdoutTTY() {
 		fn()
 		return
 	}
@@ -125,6 +131,11 @@ func withProgress(label string, prog *clean.Progress, fn func()) {
 		defer close(done)
 		fn()
 	}()
+	progressLoop(label, prog, done)
+}
+
+// progressLoop 在 done 關閉前每 0.1 秒重繪一次進度列。
+func progressLoop(label string, prog *clean.Progress, done <-chan struct{}) {
 	tick := time.NewTicker(100 * time.Millisecond)
 	defer tick.Stop()
 	for {
@@ -137,6 +148,11 @@ func withProgress(label string, prog *clean.Progress, fn func()) {
 				i18n.Tf("已掃描 %s · %s 個檔案", clean.Humanize(prog.Bytes()), clean.GroupDigits(prog.Files())))
 		}
 	}
+}
+
+func isStdoutTTY() bool {
+	fi, err := os.Stdout.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
 // ruleOptions 把使用者設定轉成規則載入選項。

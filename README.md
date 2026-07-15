@@ -34,7 +34,8 @@ Cleaning rules adapt to your distro automatically (apt / pacman / dnf / zypper /
 ## Usage
 
 ```bash
-mogura              # scan + interactive select + clean
+mogura              # overview: total reclaimable space + feature menu
+mogura clean        # scan + interactive select + clean
 mogura clean --list # list reclaimable space only, clean nothing
 mogura analyze [path] # disk usage analyzer, browse interactively
 mogura dev [path]     # scan build artifacts (node_modules, target, vendor...)

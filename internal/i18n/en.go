@@ -13,8 +13,10 @@ var en = map[string]string{
 	// usage
 	`用法: mogura [指令] [選項]
 
+無指令時開啟總覽選單(終端機環境)。
+
 指令:
-  clean      掃描並清理系統垃圾(預設)
+  clean      掃描並清理系統垃圾
   analyze    磁碟空間分析,互動瀏覽各目錄佔用
   dev        掃描開發專案的建置產物(node_modules、target、vendor...)
   orphan     找出已解除安裝軟體留下的孤兒設定檔
@@ -29,8 +31,10 @@ var en = map[string]string{
   --json         以 JSON 輸出結果(clean、dev、orphan、mem)
   [路徑]         analyze 與 dev 的起始目錄,預設為家目錄`: `Usage: mogura [command] [options]
 
+Run without a command to open the overview menu (in a terminal).
+
 Commands:
-  clean      scan and clean system junk (default)
+  clean      scan and clean system junk
   analyze    disk usage analysis, browse interactively
   dev        scan project build artifacts (node_modules, target, vendor...)
   orphan     find config files left by uninstalled software
@@ -132,6 +136,28 @@ Options:
 	"拒絕刪除":        "deletion refused",
 	"拒絕刪除第一層系統目錄": "refusing to delete a top-level system directory",
 	"拒絕刪除家目錄":     "refusing to delete the home directory",
+
+	// dashboard
+	"🦡 Mogura — 總覽":                    "🦡 Mogura — Overview",
+	"可回收空間 ":                           "Reclaimable ",
+	"(可估算項目)":                          " (measurable items)",
+	"可回收空間 掃描中... %s · %s 檔":           "Reclaimable: scanning... %s · %s files",
+	"\n↑↓ 移動 · enter 進入 · , 設定 · q 離開": "\n↑↓ move · enter open · , settings · q quit",
+	"清理系統垃圾":                           "Clean system junk",
+	"快取、垃圾桶、套件快取與日誌":                   "caches, trash, package caches and logs",
+	"磁碟空間分析":                           "Disk usage analyzer",
+	"互動瀏覽各目錄佔用":                        "browse directory usage interactively",
+	"開發垃圾":                             "Dev junk",
+	"node_modules、target 等建置產物":        "build artifacts like node_modules and target",
+	"孤兒設定檔":                            "Orphaned configs",
+	"已解除安裝軟體留下的殘留設定":                   "configs left behind by uninstalled software",
+	"系統監控":                             "System monitor",
+	"CPU、記憶體、磁碟、網路":                    "CPU, memory, disk, network",
+	"大戶排行與釋放操作":                        "top consumers and release actions",
+	"設定":                               "Settings",
+	"離開":                               "Quit",
+	"語言、刪除方式、journal 保留":               "language, delete mode, journal retention",
+	"\n按 Enter 返回總覽...":                "\nPress Enter to return to the overview...",
 
 	// ui / settings
 	"🦡 Mogura — 設定": "🦡 Mogura — Settings",

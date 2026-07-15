@@ -41,7 +41,11 @@ func runClean(args []string) error {
 		printCleanList(results)
 		return nil
 	}
+	return cleanInteract(results)
+}
 
+// cleanInteract 對已掃描的結果跑互動選擇與清理(dashboard 沿用同一份掃描)。
+func cleanInteract(results []clean.Result) error {
 	for {
 
 		opts := make([]ui.Option, len(results))

@@ -34,7 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/cluion/Mogura/main/install.sh | sh
 ## 使用
 
 ```bash
-mogura              # 掃描 + 互動選擇 + 清理
+mogura              # 總覽:可回收空間總量 + 功能選單
+mogura clean        # 掃描 + 互動選擇 + 清理
 mogura clean --list # 只列出可回收空間,不清理
 mogura analyze [路徑] # 磁碟空間分析,互動瀏覽各目錄佔用
 mogura dev [路徑]     # 掃描建置產物(node_modules、target、vendor...)
