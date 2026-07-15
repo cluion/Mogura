@@ -54,6 +54,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 
 - Scans first and shows the size of every item; nothing is deleted until you select and confirm
 - Optional trash mode in settings: deletions go to the system trash (gio trash / XDG Trash) so you can undo
+- Press `x` on any list item to add it to the exclude list — future scans skip it (works in clean, dev and orphan)
 - User-level items (caches, trash) never need root; items marked 🔒 ask for sudo per item
 - Sizes are honest `du` semantics: real disk usage (`st_blocks`), hardlinks counted once
 - Cleaning rules are declarative YAML (`internal/rules/data/`) — add a rule without touching code
@@ -66,7 +67,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 language: auto     # auto | zh | en
 delete: direct     # direct | trash (deletions go to the system trash, restorable)
 journal_days: 7    # journal log retention in days
-exclude:           # paths skipped by clean and dev scans (~ supported)
+exclude:           # paths skipped by scans (~ supported); x in any list adds here too
   - ~/.cache/huggingface
 ```
 

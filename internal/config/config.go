@@ -53,6 +53,18 @@ func Load() Config {
 	return cfg
 }
 
+// AddExclude 把路徑加入排除清單並存檔,已存在時不重複。
+func AddExclude(path string) error {
+	cfg := Load()
+	for _, e := range cfg.Exclude {
+		if e == path {
+			return nil
+		}
+	}
+	cfg.Exclude = append(cfg.Exclude, path)
+	return Save(cfg)
+}
+
 // Save 寫入設定檔,目錄不存在時自動建立。
 func Save(cfg Config) error {
 	p, err := Path()

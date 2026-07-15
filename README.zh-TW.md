@@ -54,6 +54,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
 - 設定中可改為「移至垃圾桶」:刪除走系統垃圾桶(gio trash / XDG Trash),留一層反悔空間
+- 清單中按 `x` 可將項目加入排除清單,之後掃描不再顯示(clean、dev、orphan 通用)
 - 使用者層項目(快取、垃圾桶)不需要 root;標 🔒 的系統層項目才會要求 sudo
 - 數字是誠實的 `du` 口徑:實際磁碟佔用(`st_blocks`)、硬連結只計一次
 - 清理規則是宣告式 YAML(`internal/rules/data/`),新增規則不用改程式碼
@@ -66,7 +67,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 language: auto     # auto | zh | en
 delete: direct     # direct | trash(刪除移至系統垃圾桶,可還原)
 journal_days: 7    # journal 日誌保留天數
-exclude:           # 掃描排除清單,clean 與 dev 都會跳過(支援 ~)
+exclude:           # 掃描排除清單(支援 ~);清單中按 x 也會加到這裡
   - ~/.cache/huggingface
 ```
 

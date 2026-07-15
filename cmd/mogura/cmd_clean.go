@@ -47,7 +47,7 @@ func runClean(args []string) error {
 // cleanInteract 對已掃描的結果跑互動選擇與清理(dashboard 沿用同一份掃描)。
 func cleanInteract(results []clean.Result) error {
 	for {
-
+		results = dropExcluded(results)
 		opts := make([]ui.Option, len(results))
 		for i, r := range results {
 			opts[i] = ui.Option{
@@ -57,6 +57,7 @@ func cleanInteract(results []clean.Result) error {
 				Known: r.Known,
 				Risk:  r.Rule.Risk,
 				Root:  r.Rule.Root,
+				Path:  singleTarget(r),
 				Value: r,
 			}
 		}
@@ -82,6 +83,30 @@ func cleanInteract(results []clean.Result) error {
 		}
 		return confirmAndRun(picked)
 	}
+}
+
+// singleTarget 回傳規則唯一的目標路徑;多目標或 action 型規則不可用 x 排除。
+func singleTarget(r clean.Result) string {
+	if len(r.Targets) == 1 && r.Rule.Action == "" {
+		return r.Targets[0]
+	}
+	return ""
+}
+
+// dropExcluded 濾掉已被全域排除的單一路徑項目(x 排除後語言切換等重建時生效)。
+func dropExcluded(results []clean.Result) []clean.Result {
+	ex := excludePaths()
+	if len(ex) == 0 {
+		return results
+	}
+	out := make([]clean.Result, 0, len(results))
+	for _, r := range results {
+		if t := singleTarget(r); t != "" && clean.Excluded(t, ex) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
 }
 
 func printCleanList(results []clean.Result) {

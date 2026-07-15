@@ -3,12 +3,14 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"mogura/internal/clean"
+	"mogura/internal/config"
 	"mogura/internal/i18n"
 )
 
@@ -29,6 +31,7 @@ var (
 )
 
 // Option 是多選清單中的一個項目,Value 由呼叫端夾帶原始資料。
+// Path 非空時,該項目可用 x 加入全域排除清單。
 type Option struct {
 	Label string
 	Desc  string
@@ -36,6 +39,7 @@ type Option struct {
 	Known bool
 	Risk  string // low/medium/high,空字串不顯示
 	Root  bool
+	Path  string
 	Value any
 }
 
@@ -51,6 +55,7 @@ type model struct {
 	height   int
 	aborted  bool
 	restart  bool
+	status   string
 	settings *Settings
 }
 
@@ -117,7 +122,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor++
 		}
 	case " ":
-		m.items[m.cursor].selected = !m.items[m.cursor].selected
+		if len(m.items) > 0 {
+			m.items[m.cursor].selected = !m.items[m.cursor].selected
+		}
+	case "x":
+		m.excludeCurrent()
 	case "a":
 		for i := range m.items {
 			m.items[i].selected = true
@@ -133,6 +142,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.settings = &s
 	}
 	return m, nil
+}
+
+// excludeCurrent 把游標項目的路徑寫進全域排除清單,並從清單移除。
+func (m *model) excludeCurrent() {
+	if len(m.items) == 0 {
+		return
+	}
+	opt := m.items[m.cursor].opt
+	if opt.Path == "" {
+		m.status = i18n.T("此項目無法排除(非單一路徑)")
+		return
+	}
+	if err := config.AddExclude(shortenHome(opt.Path)); err != nil {
+		m.status = i18n.T("設定儲存失敗:") + err.Error()
+		return
+	}
+	m.items = append(m.items[:m.cursor], m.items[m.cursor+1:]...)
+	if m.cursor >= len(m.items) && m.cursor > 0 {
+		m.cursor--
+	}
+	m.status = i18n.Tf("已排除 %s,之後掃描不再顯示(設定檔可移除)", shortenHome(opt.Path))
+}
+
+// shortenHome 把家目錄前綴縮寫成 ~,排除清單存起來跨機器可攜。
+func shortenHome(p string) string {
+	if home, err := os.UserHomeDir(); err == nil && strings.HasPrefix(p, home+"/") {
+		return "~" + strings.TrimPrefix(p, home)
+	}
+	return p
 }
 
 func (m model) View() string {
@@ -193,6 +231,9 @@ func (m model) View() string {
 	}
 
 	b.WriteString("\n" + totalStyle.Render(i18n.T("已選擇可回收: ")+clean.Humanize(total)))
-	b.WriteString(helpStyle.Render(i18n.T("\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · , 設定 · q 離開 · 🔒 需要 sudo")))
+	if m.status != "" {
+		b.WriteString("\n" + descStyle.Render(m.status))
+	}
+	b.WriteString(helpStyle.Render(i18n.T("\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · x 排除 · , 設定 · q 離開 · 🔒 需要 sudo")))
 	return b.String()
 }

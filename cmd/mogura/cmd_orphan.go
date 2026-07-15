@@ -38,6 +38,7 @@ func runOrphan(args []string) error {
 	withProgress(i18n.T("比對設定目錄中..."), prog, func() {
 		cands = orphan.ScanBases(orphan.DefaultBases(), sys.Installed, prog)
 	})
+	cands = dropExcludedCands(cands)
 	sort.SliceStable(cands, func(a, b int) bool { return cands[a].Size > cands[b].Size })
 
 	if jsonOut {
@@ -54,7 +55,7 @@ func runOrphan(args []string) error {
 	}
 
 	for {
-
+		cands = dropExcludedCands(cands)
 		var opts []ui.Option
 		if len(sys.RemovedConfigs) > 0 {
 			opts = append(opts, ui.Option{
@@ -78,6 +79,7 @@ func runOrphan(args []string) error {
 				Size:  c.Size,
 				Known: true,
 				Risk:  "medium",
+				Path:  c.Path,
 				Value: clean.Result{
 					Rule:    rules.Rule{ID: "orphan", Name: relPath(c.Path, home), Risk: "medium"},
 					Targets: []string{c.Path},
@@ -104,6 +106,22 @@ func runOrphan(args []string) error {
 		}
 		return confirmAndRun(picked)
 	}
+}
+
+// dropExcludedCands 濾掉已被全域排除的候選目錄。
+func dropExcludedCands(cands []orphan.Candidate) []orphan.Candidate {
+	ex := excludePaths()
+	if len(ex) == 0 {
+		return cands
+	}
+	out := make([]orphan.Candidate, 0, len(cands))
+	for _, c := range cands {
+		if clean.Excluded(c.Path, ex) {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 func printOrphanList(cands []orphan.Candidate, rc []string, home string) {

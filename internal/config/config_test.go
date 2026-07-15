@@ -88,3 +88,19 @@ func TestLoadExclude(t *testing.T) {
 		t.Errorf("Exclude = %v", cfg.Exclude)
 	}
 }
+
+func TestAddExclude(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	for _, p := range []string{"~/.cache/keep", "~/.cache/keep", "/opt/data"} {
+		if err := AddExclude(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := Load()
+	if len(cfg.Exclude) != 2 || cfg.Exclude[0] != "~/.cache/keep" || cfg.Exclude[1] != "/opt/data" {
+		t.Errorf("Exclude = %v, 預期去重後兩筆", cfg.Exclude)
+	}
+	if cfg.Language != "auto" || cfg.JournalDays != 7 {
+		t.Errorf("AddExclude 不應動到其他設定: %+v", cfg)
+	}
+}

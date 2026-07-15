@@ -63,7 +63,7 @@ func runDev(args []string) error {
 	}
 
 	for {
-
+		junks = dropExcludedJunks(junks)
 		opts := make([]ui.Option, len(junks))
 		for i, j := range junks {
 			opts[i] = ui.Option{
@@ -72,6 +72,7 @@ func runDev(args []string) error {
 				Size:  j.Size,
 				Known: true,
 				Risk:  j.Kind.Risk,
+				Path:  j.Path,
 				Value: j,
 			}
 		}
@@ -99,6 +100,22 @@ func runDev(args []string) error {
 		}
 		return confirmAndRun(picked)
 	}
+}
+
+// dropExcludedJunks 濾掉已被全域排除的產物(x 排除後重建選單時生效)。
+func dropExcludedJunks(junks []devjunk.Junk) []devjunk.Junk {
+	ex := excludePaths()
+	if len(ex) == 0 {
+		return junks
+	}
+	out := make([]devjunk.Junk, 0, len(junks))
+	for _, j := range junks {
+		if clean.Excluded(j.Path, ex) {
+			continue
+		}
+		out = append(out, j)
+	}
+	return out
 }
 
 func printDevList(junks []devjunk.Junk, home string) {

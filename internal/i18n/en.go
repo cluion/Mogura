@@ -177,8 +177,10 @@ Options:
 	"風險中":      "med risk",
 	"風險高":      "high risk",
 	"已選擇可回收: ": "Selected reclaimable: ",
-	"\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · , 設定 · q 離開 · 🔒 需要 sudo": "\nspace select · a all · n none · enter run · , settings · q quit · 🔒 needs sudo",
-	"互動介面啟動失敗: %w": "failed to start interactive UI: %w",
+	"\n空白鍵 勾選 · a 全選 · n 全不選 · enter 執行 · x 排除 · , 設定 · q 離開 · 🔒 需要 sudo": "\nspace select · a all · n none · enter run · x exclude · , settings · q quit · 🔒 needs sudo",
+	"此項目無法排除(非單一路徑)":          "this item can't be excluded (not a single path)",
+	"已排除 %s,之後掃描不再顯示(設定檔可移除)": "Excluded %s; future scans will skip it (remove it from the config file to undo)",
+	"互動介面啟動失敗: %w":            "failed to start interactive UI: %w",
 
 	// monitor
 	"🦡 取樣中...\n":                          "🦡 Sampling...\n",
