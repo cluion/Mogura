@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Progress 讓掃描過程即時回報累計量,供 UI 顯示;nil 時所有操作皆為 no-op。
+// Progress 讓掃描過程即時回報累計量,供 UI 顯示;nil 時所有操作皆為 no-op
 type Progress struct {
 	bytes  atomic.Int64
 	files  atomic.Int64
@@ -18,7 +18,7 @@ type Progress struct {
 }
 
 // ChildProgress 建立子進度:累計時同步轉發給 parent(可為 nil),
-// 讓局部計數與全域即時顯示共用同一趟走訪。
+// 讓局部計數與全域即時顯示共用同一趟走訪
 func ChildProgress(parent *Progress) *Progress {
 	return &Progress{parent: parent}
 }
@@ -65,8 +65,8 @@ type walker struct {
 }
 
 // Walk 平行走訪 path,回傳實際磁碟佔用(du 口徑:st_blocks、
-// 硬連結只計一次、含目錄本身)與整棵樹最新的 mtime。
-// 不追蹤 symlink,無權限的子項直接略過。
+// 硬連結只計一次、含目錄本身)與整棵樹最新的 mtime
+// 不追蹤 symlink,無權限的子項直接略過
 func Walk(path string, prog *Progress) (int64, time.Time) {
 	info, err := os.Lstat(path)
 	if err != nil {
@@ -86,14 +86,14 @@ func Walk(path string, prog *Progress) (int64, time.Time) {
 	return w.total.Load(), time.Unix(0, w.latestNs.Load())
 }
 
-// SizeOf 計算檔案或目錄的實際磁碟佔用。
+// SizeOf 計算檔案或目錄的實際磁碟佔用
 func SizeOf(path string) int64 {
 	size, _ := Walk(path, nil)
 	return size
 }
 
 // walkDir 對子目錄採「有空位就開 goroutine,沒有就原地遞迴」,
-// 避免深樹的 goroutine 爆炸,同時吃滿磁碟平行度。
+// 避免深樹的 goroutine 爆炸,同時吃滿磁碟平行度
 func (w *walker) walkDir(dir string) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -123,8 +123,8 @@ func (w *walker) walkDir(dir string) {
 	}
 }
 
-// account 累計一個項目的磁碟佔用。一般檔案若有多個硬連結,
-// 同一 inode 只在首次遇到時計數(目錄的 nlink 天生 >1,不去重)。
+// account 累計一個項目的磁碟佔用;一般檔案若有多個硬連結,
+// 同一 inode 只在首次遇到時計數(目錄的 nlink 天生 >1,不去重)
 func (w *walker) account(info os.FileInfo) {
 	st, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {

@@ -1,5 +1,5 @@
 // Package devjunk 掃描開發專案的建置產物:node_modules、target、vendor 等
-// 可以重新產生的目錄。
+// 可以重新產生的目錄
 package devjunk
 
 import (
@@ -12,7 +12,7 @@ import (
 	"mogura/internal/clean"
 )
 
-// Kind 定義一種建置產物:目錄名 + 佐證檔(存在於同層才視為專案產物,避免誤刪同名目錄)。
+// Kind 定義一種建置產物:目錄名 + 佐證檔(存在於同層才視為專案產物,避免誤刪同名目錄)
 type Kind struct {
 	Dir     string
 	Sibling string
@@ -30,7 +30,7 @@ var kinds = []Kind{
 	{Dir: ".ruff_cache", Label: "Python", Risk: "low"},
 }
 
-// Junk 是一個可清除的建置產物目錄。
+// Junk 是一個可清除的建置產物目錄
 type Junk struct {
 	Path    string
 	Kind    Kind
@@ -38,8 +38,8 @@ type Junk struct {
 	ModTime time.Time
 }
 
-// Scan 從 root 向下找建置產物。隱藏目錄(除了產物本身)一律跳過,
-// 找到的產物目錄不再深入。exclude 須為已展開的絕對路徑,prog 可為 nil。
+// Scan 從 root 向下找建置產物;隱藏目錄(除了產物本身)一律跳過,
+// 找到的產物目錄不再深入;exclude 須為已展開的絕對路徑,prog 可為 nil
 func Scan(root string, exclude []string, prog *clean.Progress) ([]Junk, error) {
 	var junks []Junk
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -86,7 +86,7 @@ func match(path, name string) (Kind, bool) {
 	return Kind{}, false
 }
 
-// IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1。
+// IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1
 func (j Junk) IdleDays() int {
 	if j.ModTime.IsZero() {
 		return -1

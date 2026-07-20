@@ -11,7 +11,7 @@ import (
 	"mogura/internal/orphan"
 )
 
-// JSON 輸出契約:鍵永遠是英文、大小一律 bytes、id 穩定不隨介面語言變動。
+// JSON 輸出契約:鍵永遠是英文、大小一律 bytes、id 穩定不隨介面語言變動
 
 func printJSON(v any) error {
 	enc := json.NewEncoder(os.Stdout)

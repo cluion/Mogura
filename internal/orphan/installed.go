@@ -1,4 +1,4 @@
-// Package orphan 找出已解除安裝軟體留下的孤兒設定檔。
+// Package orphan 找出已解除安裝軟體留下的孤兒設定檔
 package orphan
 
 import (
@@ -10,13 +10,13 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
-// System 是孤兒比對的依據:仍存在的軟體識別名,與 dpkg 已移除但留設定的套件。
+// System 是孤兒比對的依據:仍存在的軟體識別名,與 dpkg 已移除但留設定的套件
 type System struct {
 	Installed      map[string]bool
 	RemovedConfigs []string
 }
 
-// Detect 蒐集 dpkg 套件、snap、flatpak app id 與 PATH 執行檔名(全部小寫)。
+// Detect 蒐集 dpkg 套件、snap、flatpak app id 與 PATH 執行檔名(全部小寫)
 func Detect() System {
 	sys := System{Installed: map[string]bool{}}
 

@@ -1,4 +1,4 @@
-// Package analyze 提供磁碟空間分析:計算目錄大小並以 TUI 瀏覽。
+// Package analyze 提供磁碟空間分析:計算目錄大小並以 TUI 瀏覽
 package analyze
 
 import (
@@ -13,7 +13,7 @@ import (
 	"mogura/internal/clean"
 )
 
-// Entry 是目錄下的一個項目及其統計。
+// Entry 是目錄下的一個項目及其統計
 type Entry struct {
 	Name    string
 	Path    string
@@ -29,7 +29,7 @@ type stat struct {
 	mtime time.Time
 }
 
-// Sizer 提供帶快取的目錄統計,同一路徑只完整走訪一次。
+// Sizer 提供帶快取的目錄統計,同一路徑只完整走訪一次
 type Sizer struct {
 	mu    sync.Mutex
 	cache map[string]stat
@@ -40,14 +40,14 @@ func NewSizer() *Sizer {
 	return &Sizer{cache: map[string]stat{}}
 }
 
-// SetProgress 設定即時進度匯流點。
+// SetProgress 設定即時進度匯流點
 func (s *Sizer) SetProgress(p *clean.Progress) { s.live = p }
 
-// SizeUnknown 表示該項目的統計尚未算出(串流中)。
+// SizeUnknown 表示該項目的統計尚未算出(串流中)
 const SizeUnknown int64 = -1
 
 // ListStream 立即回傳項目清單(統計未知),統計算完一項就往 channel 送一項,
-// 全部完成後關閉 channel。
+// 全部完成後關閉 channel
 func (s *Sizer) ListStream(dir string) ([]Entry, <-chan Entry, error) {
 	dirents, err := os.ReadDir(dir)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Sizer) ListStream(dir string) ([]Entry, <-chan Entry, error) {
 	return entries, ch, nil
 }
 
-// List 列出目錄下所有項目並平行計算統計,依大小遞減排序(阻塞至全部完成)。
+// List 列出目錄下所有項目並平行計算統計,依大小遞減排序(阻塞至全部完成)
 func (s *Sizer) List(dir string) ([]Entry, error) {
 	entries, ch, err := s.ListStream(dir)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *Sizer) List(dir string) ([]Entry, error) {
 	return entries, nil
 }
 
-// Invalidate 移除 path 本身、其子孫與所有祖先的快取(刪除後統計全變了)。
+// Invalidate 移除 path 本身、其子孫與所有祖先的快取(刪除後統計全變了)
 func (s *Sizer) Invalidate(path string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

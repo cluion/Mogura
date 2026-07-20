@@ -102,7 +102,7 @@ func runDev(args []string) error {
 	}
 }
 
-// dropExcludedJunks 濾掉已被全域排除的產物(x 排除後重建選單時生效)。
+// dropExcludedJunks 濾掉已被全域排除的產物(x 排除後重建選單時生效)
 func dropExcludedJunks(junks []devjunk.Junk) []devjunk.Junk {
 	ex := excludePaths()
 	if len(ex) == 0 {

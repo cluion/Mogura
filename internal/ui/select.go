@@ -1,4 +1,4 @@
-// Package ui 提供終端機互動元件。
+// Package ui 提供終端機互動元件
 package ui
 
 import (
@@ -30,8 +30,8 @@ var (
 	riskLabels = map[string]string{"low": "風險低", "medium": "風險中", "high": "風險高"}
 )
 
-// Option 是多選清單中的一個項目,Value 由呼叫端夾帶原始資料。
-// Path 非空時,該項目可用 x 加入全域排除清單。
+// Option 是多選清單中的一個項目,Value 由呼叫端夾帶原始資料
+// Path 非空時,該項目可用 x 加入全域排除清單
 type Option struct {
 	Label string
 	Desc  string
@@ -59,8 +59,8 @@ type model struct {
 	settings *Settings
 }
 
-// MultiSelect 顯示互動多選清單,回傳使用者勾選的項目;取消時回傳 nil。
-// restart 為 true 表示使用者在面板中切換了語言,呼叫端應重建流程再進來。
+// MultiSelect 顯示互動多選清單,回傳使用者勾選的項目;取消時回傳 nil
+// restart 為 true 表示使用者在面板中切換了語言,呼叫端應重建流程再進來
 func MultiSelect(title string, opts []Option) (selected []Option, restart bool, err error) {
 	items := make([]item, len(opts))
 	for i, o := range opts {
@@ -144,7 +144,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// excludeCurrent 把游標項目的路徑寫進全域排除清單,並從清單移除。
+// excludeCurrent 把游標項目的路徑寫進全域排除清單,並從清單移除
 func (m *model) excludeCurrent() {
 	if len(m.items) == 0 {
 		return
@@ -165,7 +165,7 @@ func (m *model) excludeCurrent() {
 	m.status = i18n.Tf("已排除 %s,之後掃描不再顯示(設定檔可移除)", shortenHome(opt.Path))
 }
 
-// shortenHome 把家目錄前綴縮寫成 ~,排除清單存起來跨機器可攜。
+// shortenHome 把家目錄前綴縮寫成 ~,排除清單存起來跨機器可攜
 func shortenHome(p string) string {
 	if home, err := os.UserHomeDir(); err == nil && strings.HasPrefix(p, home+"/") {
 		return "~" + strings.TrimPrefix(p, home)

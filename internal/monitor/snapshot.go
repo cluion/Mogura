@@ -1,4 +1,4 @@
-// Package monitor 提供系統即時監控:CPU、記憶體、磁碟、網路。
+// Package monitor 提供系統即時監控:CPU、記憶體、磁碟、網路
 package monitor
 
 import (
@@ -13,7 +13,7 @@ import (
 	gnet "github.com/shirou/gopsutil/v4/net"
 )
 
-// DiskUsage 是一個掛載點的使用狀況。
+// DiskUsage 是一個掛載點的使用狀況
 type DiskUsage struct {
 	Mount   string
 	Used    uint64
@@ -21,7 +21,7 @@ type DiskUsage struct {
 	Percent float64
 }
 
-// Snapshot 是一次系統狀態取樣。
+// Snapshot 是一次系統狀態取樣
 type Snapshot struct {
 	Hostname string
 	Uptime   time.Duration
@@ -49,13 +49,13 @@ type Snapshot struct {
 	takenAt time.Time
 }
 
-// 只顯示真實檔案系統,略過 tmpfs、squashfs(snap)等虛擬掛載。
+// 只顯示真實檔案系統,略過 tmpfs、squashfs(snap)等虛擬掛載
 var realFS = map[string]bool{
 	"ext4": true, "ext3": true, "ext2": true, "xfs": true, "btrfs": true,
 	"zfs": true, "f2fs": true, "vfat": true, "ntfs": true, "exfat": true,
 }
 
-// Take 取樣目前系統狀態;prev 用於計算網路速率(首次可傳 nil)。
+// Take 取樣目前系統狀態;prev 用於計算網路速率(首次可傳 nil)
 func Take(prev *Snapshot) Snapshot {
 	s := Snapshot{takenAt: time.Now()}
 	s.Hostname, _ = os.Hostname()

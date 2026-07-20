@@ -32,7 +32,7 @@ type dashboard struct {
 	ready bool
 }
 
-// Run 啟動即時監控儀表板,每 2 秒更新。
+// Run 啟動即時監控儀表板,每 2 秒更新
 func Run() error {
 	_, err := tea.NewProgram(dashboard{}, tea.WithAltScreen()).Run()
 	return err

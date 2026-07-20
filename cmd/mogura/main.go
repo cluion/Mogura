@@ -1,4 +1,4 @@
-// Mogura — Linux 系統清理工具。像鼴鼠一樣,把磁碟裡的垃圾挖出來。
+// Mogura — Linux 系統清理工具:像鼴鼠一樣,把磁碟裡的垃圾挖出來
 package main
 
 import (
@@ -83,7 +83,7 @@ func usage() {
   [路徑]         analyze 與 dev 的起始目錄,預設為家目錄`))
 }
 
-// confirm 顯示選定項目摘要並要求使用者確認。
+// confirm 顯示選定項目摘要並要求使用者確認
 func confirm(labels []string, sizes []int64, needRoot bool) bool {
 	var total int64
 	known := false
@@ -106,7 +106,7 @@ func confirm(labels []string, sizes []int64, needRoot bool) bool {
 	return promptYes()
 }
 
-// promptYes 讀取使用者的 y/N 確認。
+// promptYes 讀取使用者的 y/N 確認
 func promptYes() bool {
 	fmt.Print(i18n.T("確定執行?[y/N] "))
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -120,7 +120,7 @@ func isTTY() bool {
 }
 
 // withProgress 在 fn 執行期間即時顯示掃描進度;
-// stdout 不是終端機(如管線輸出)時安靜執行,避免 \r 汙染管線。
+// stdout 不是終端機(如管線輸出)時安靜執行,避免 \r 汙染管線
 func withProgress(label string, prog *clean.Progress, fn func()) {
 	if !isStdoutTTY() {
 		fn()
@@ -134,7 +134,7 @@ func withProgress(label string, prog *clean.Progress, fn func()) {
 	progressLoop(label, prog, done)
 }
 
-// progressLoop 在 done 關閉前每 0.1 秒重繪一次進度列。
+// progressLoop 在 done 關閉前每 0.1 秒重繪一次進度列
 func progressLoop(label string, prog *clean.Progress, done <-chan struct{}) {
 	tick := time.NewTicker(100 * time.Millisecond)
 	defer tick.Stop()
@@ -155,13 +155,13 @@ func isStdoutTTY() bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
-// ruleOptions 把使用者設定轉成規則載入選項。
+// ruleOptions 把使用者設定轉成規則載入選項
 func ruleOptions() rules.Options {
 	cfg := config.Load()
 	return rules.Options{Exclude: cfg.Exclude, JournalDays: cfg.JournalDays}
 }
 
-// excludePaths 回傳已展開的全域排除清單。
+// excludePaths 回傳已展開的全域排除清單
 func excludePaths() []string {
 	var out []string
 	for _, e := range config.Load().Exclude {
@@ -170,7 +170,7 @@ func excludePaths() []string {
 	return out
 }
 
-// confirmAndRun 對選定項目做最終確認、執行並逐項回報。
+// confirmAndRun 對選定項目做最終確認、執行並逐項回報
 func confirmAndRun(picked []clean.Result) error {
 	var (
 		labels   []string

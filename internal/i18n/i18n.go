@@ -1,5 +1,5 @@
 // Package i18n 提供極簡在地化:繁中原文即查表鍵,
-// 語系為 zh* 時整層短路,其他語系查英文表、查不到回原文。
+// 語系為 zh* 時整層短路,其他語系查英文表、查不到回原文
 package i18n
 
 import (
@@ -22,10 +22,10 @@ func detectEnglish() bool {
 	return true // 無語系資訊時預設英文(國際發行)
 }
 
-// SetEnglish 強制切換語系,測試用。
+// SetEnglish 強制切換語系,測試用
 func SetEnglish(b bool) { english = b }
 
-// Apply 依設定值切換語言:zh / en / auto(auto 重新依環境偵測)。
+// Apply 依設定值切換語言:zh / en / auto(auto 重新依環境偵測)
 func Apply(lang string) {
 	switch lang {
 	case "zh":
@@ -37,7 +37,7 @@ func Apply(lang string) {
 	}
 }
 
-// T 翻譯一個字串;非英文語系或查無翻譯時原樣返回。
+// T 翻譯一個字串;非英文語系或查無翻譯時原樣返回
 func T(s string) string {
 	if !english {
 		return s
@@ -48,7 +48,7 @@ func T(s string) string {
 	return s
 }
 
-// Tf 翻譯格式字串後代入參數。
+// Tf 翻譯格式字串後代入參數
 func Tf(format string, args ...any) string {
 	return fmt.Sprintf(T(format), args...)
 }

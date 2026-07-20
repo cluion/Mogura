@@ -11,7 +11,7 @@ import (
 	"mogura/internal/ui"
 )
 
-// 選單項目存原文,ui 端顯示時才翻譯,面板內切語言立即生效。
+// 選單項目存原文,ui 端顯示時才翻譯,面板內切語言立即生效
 var dashMenu = []ui.MenuItem{
 	{ID: "clean", Label: "清理系統垃圾", Desc: "快取、垃圾桶、套件快取與日誌"},
 	{ID: "analyze", Label: "磁碟空間分析", Desc: "互動瀏覽各目錄佔用"},
@@ -23,8 +23,8 @@ var dashMenu = []ui.MenuItem{
 	{ID: "quit", Label: "離開", Desc: ""},
 }
 
-// runDashboard 是無參數時的總覽:選單秒開,可回收總量背景掃描即時更新。
-// 子功能結束後回到總覽並重新掃描。
+// runDashboard 是無參數時的總覽:選單秒開,可回收總量背景掃描即時更新
+// 子功能結束後回到總覽並重新掃描
 func runDashboard() error {
 	for {
 		prog := &clean.Progress{}
@@ -86,7 +86,7 @@ func runDashboard() error {
 	}
 }
 
-// pause 讓有列印輸出的子功能結果停留在畫面上,再返回總覽。
+// pause 讓有列印輸出的子功能結果停留在畫面上,再返回總覽
 func pause() {
 	fmt.Print(i18n.T("\n按 Enter 返回總覽..."))
 	_, _ = bufio.NewReader(os.Stdin).ReadString('\n')

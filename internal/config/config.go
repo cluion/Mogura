@@ -1,4 +1,4 @@
-// Package config 管理 ~/.config/mogura/config.yaml 的使用者設定。
+// Package config 管理 ~/.config/mogura/config.yaml 的使用者設定
 package config
 
 import (
@@ -17,10 +17,10 @@ type Config struct {
 
 const defaultJournalDays = 7
 
-// UseTrash 回報刪除是否走垃圾桶。
+// UseTrash 回報刪除是否走垃圾桶
 func (c Config) UseTrash() bool { return c.Delete == "trash" }
 
-// Path 回傳設定檔路徑(依 XDG 慣例)。
+// Path 回傳設定檔路徑(依 XDG 慣例)
 func Path() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
@@ -29,7 +29,7 @@ func Path() (string, error) {
 	return filepath.Join(base, "mogura", "config.yaml"), nil
 }
 
-// Load 讀取設定;檔案不存在或損壞時回傳預設值,不阻擋主流程。
+// Load 讀取設定;檔案不存在或損壞時回傳預設值,不阻擋主流程
 func Load() Config {
 	cfg := Config{Language: "auto", Delete: "direct", JournalDays: defaultJournalDays}
 	p, err := Path()
@@ -53,7 +53,7 @@ func Load() Config {
 	return cfg
 }
 
-// AddExclude 把路徑加入排除清單並存檔,已存在時不重複。
+// AddExclude 把路徑加入排除清單並存檔,已存在時不重複
 func AddExclude(path string) error {
 	cfg := Load()
 	for _, e := range cfg.Exclude {
@@ -65,7 +65,7 @@ func AddExclude(path string) error {
 	return Save(cfg)
 }
 
-// Save 寫入設定檔,目錄不存在時自動建立。
+// Save 寫入設定檔,目錄不存在時自動建立
 func Save(cfg Config) error {
 	p, err := Path()
 	if err != nil {

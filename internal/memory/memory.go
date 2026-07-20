@@ -1,4 +1,4 @@
-// Package memory 提供記憶體狀態、程序排行與釋放操作。
+// Package memory 提供記憶體狀態、程序排行與釋放操作
 package memory
 
 import (
@@ -12,7 +12,7 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 )
 
-// Stats 是目前的記憶體與 swap 狀態。
+// Stats 是目前的記憶體與 swap 狀態
 type Stats struct {
 	Total     uint64
 	Used      uint64
@@ -22,14 +22,14 @@ type Stats struct {
 	SwapUsed  uint64
 }
 
-// Proc 是一個程序的記憶體佔用。
+// Proc 是一個程序的記憶體佔用
 type Proc struct {
 	PID  int32
 	Name string
 	RSS  uint64
 }
 
-// Read 讀取目前記憶體狀態。
+// Read 讀取目前記憶體狀態
 func Read() (Stats, error) {
 	vm, err := mem.VirtualMemory()
 	if err != nil {
@@ -44,7 +44,7 @@ func Read() (Stats, error) {
 	return s, nil
 }
 
-// Top 回傳 RSS 前 n 名的程序。
+// Top 回傳 RSS 前 n 名的程序
 func Top(n int) ([]Proc, error) {
 	procs, err := process.Processes()
 	if err != nil {
@@ -65,7 +65,7 @@ func Top(n int) ([]Proc, error) {
 	return Rank(out, n), nil
 }
 
-// Rank 依 RSS 遞減排序並取前 n 名。
+// Rank 依 RSS 遞減排序並取前 n 名
 func Rank(procs []Proc, n int) []Proc {
 	sort.SliceStable(procs, func(a, b int) bool { return procs[a].RSS > procs[b].RSS })
 	if len(procs) > n {
@@ -74,12 +74,12 @@ func Rank(procs []Proc, n int) []Proc {
 	return procs
 }
 
-// DropCaches 清除 page cache(需要 root)。多數情況下不必要,cache 會自動回收。
+// DropCaches 清除 page cache(需要 root);多數情況下不必要,cache 會自動回收
 func DropCaches() error {
 	return runPrivileged("sync && echo 3 > /proc/sys/vm/drop_caches")
 }
 
-// SwapReset 把 swap 內容搬回 RAM(需要 root 且要有足夠可用記憶體)。
+// SwapReset 把 swap 內容搬回 RAM(需要 root 且要有足夠可用記憶體)
 func SwapReset() error {
 	return runPrivileged("swapoff -a && swapon -a")
 }

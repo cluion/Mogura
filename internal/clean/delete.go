@@ -11,14 +11,14 @@ import (
 	"mogura/internal/trash"
 )
 
-// ItemOutcome 是單一規則的執行結果,供上層逐項回報。
+// ItemOutcome 是單一規則的執行結果,供上層逐項回報
 type ItemOutcome struct {
 	Result Result
 	Err    error
 }
 
-// Execute 依序執行選定規則的清理,回傳釋放量與逐項結果。
-// useTrash 為真時,路徑型刪除改移入垃圾桶(action 型規則不受影響)。
+// Execute 依序執行選定規則的清理,回傳釋放量與逐項結果
+// useTrash 為真時,路徑型刪除改移入垃圾桶(action 型規則不受影響)
 func Execute(selected []Result, useTrash bool) (freed int64, outcomes []ItemOutcome) {
 	for _, res := range selected {
 		err := executeOne(res, useTrash)
@@ -34,7 +34,7 @@ func executeOne(res Result, useTrash bool) error {
 	r := res.Rule
 	if r.Action != "" {
 		// Action 來自 go:embed 的內建規則,非使用者輸入;若未來支援
-		// 使用者自訂規則檔,須重新審視 sh -c 的注入風險。
+		// 使用者自訂規則檔,須重新審視 sh -c 的注入風險
 		cmd := exec.Command("sh", "-c", r.Action)
 		if r.Root && os.Geteuid() != 0 {
 			cmd = exec.Command("sudo", "sh", "-c", r.Action)
@@ -47,7 +47,7 @@ func executeOne(res Result, useTrash bool) error {
 		return nil
 	}
 
-	// 垃圾桶模式只適用使用者層規則;清空垃圾桶本身永遠直接刪,避免循環。
+	// 垃圾桶模式只適用使用者層規則;清空垃圾桶本身永遠直接刪,避免循環
 	toTrash := useTrash && !r.Root && r.ID != "trash"
 	var failed []string
 	for _, t := range res.Targets {
@@ -72,7 +72,7 @@ func executeOne(res Result, useTrash bool) error {
 }
 
 // guardPath 是刪除前的最後防線:擋下可疑的過短路徑,
-// 且非 root 規則只允許刪除家目錄內的路徑。
+// 且非 root 規則只允許刪除家目錄內的路徑
 func guardPath(path string, root bool) error {
 	if !strings.HasPrefix(path, "/") {
 		return errors.New(i18n.T("非絕對路徑"))

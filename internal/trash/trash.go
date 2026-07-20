@@ -1,4 +1,4 @@
-// Package trash 實作「移至垃圾桶」:優先用 gio,退回 XDG Trash 規範。
+// Package trash 實作「移至垃圾桶」:優先用 gio,退回 XDG Trash 規範
 package trash
 
 import (
@@ -16,8 +16,8 @@ import (
 	"mogura/internal/i18n"
 )
 
-// Put 把路徑移入垃圾桶。gio 能正確處理跨分割區與各掛載點的
-// 垃圾桶,所以優先;沒有 gio 時用內建的 XDG Trash 實作。
+// Put 把路徑移入垃圾桶;gio 能正確處理跨分割區與各掛載點的
+// 垃圾桶,所以優先;沒有 gio 時用內建的 XDG Trash 實作
 func Put(path string) error {
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -34,7 +34,7 @@ func Put(path string) error {
 }
 
 // xdgPut 依 XDG Trash 規範搬移:先以 O_EXCL 建立 .trashinfo 佔名,
-// 再 rename 進 files/。已在垃圾桶內的路徑直接刪除,避免循環。
+// 再 rename 進 files/;已在垃圾桶內的路徑直接刪除,避免循環
 func xdgPut(abs string) error {
 	dir, err := Dir()
 	if err != nil {
@@ -65,7 +65,7 @@ func xdgPut(abs string) error {
 	return nil
 }
 
-// reserveName 以 O_EXCL 建立 .trashinfo 搶佔唯一名稱並寫入內容。
+// reserveName 以 O_EXCL 建立 .trashinfo 搶佔唯一名稱並寫入內容
 func reserveName(infoDir, base, abs string) (name, infoFile string, err error) {
 	for i := 1; ; i++ {
 		name = base
@@ -91,7 +91,7 @@ func reserveName(infoDir, base, abs string) (name, infoFile string, err error) {
 	}
 }
 
-// Dir 回傳家目錄垃圾桶位置(依 XDG 慣例)。
+// Dir 回傳家目錄垃圾桶位置(依 XDG 慣例)
 func Dir() (string, error) {
 	if x := os.Getenv("XDG_DATA_HOME"); x != "" {
 		return filepath.Join(x, "Trash"), nil

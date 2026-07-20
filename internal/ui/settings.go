@@ -17,7 +17,7 @@ var (
 
 const settingsRows = 3
 
-// Settings 是可嵌入各 TUI 的設定面板;變更即時生效並立刻存檔。
+// Settings 是可嵌入各 TUI 的設定面板;變更即時生效並立刻存檔
 type Settings struct {
 	cfg     config.Config
 	initial config.Config
@@ -31,12 +31,12 @@ func NewSettings() Settings {
 }
 
 // Changed 回報開啟面板以來,會影響已顯示規則文字的設定是否有變,
-// 供宿主決定要不要重建畫面(語言、journal 天數都會反映在規則名稱與說明)。
+// 供宿主決定要不要重建畫面(語言、journal 天數都會反映在規則名稱與說明)
 func (s Settings) Changed() bool {
 	return s.cfg.Language != s.initial.Language || s.cfg.JournalDays != s.initial.JournalDays
 }
 
-// HandleKey 處理按鍵,回傳更新後的面板與「是否關閉」。
+// HandleKey 處理按鍵,回傳更新後的面板與「是否關閉」
 func (s Settings) HandleKey(key tea.KeyMsg) (Settings, bool) {
 	switch key.String() {
 	case "enter", "q", "esc", ",", "ctrl+c":
@@ -145,7 +145,7 @@ func (p settingsProgram) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (p settingsProgram) View() string { return p.s.View() }
 
-// RunSettings 以獨立程式執行設定面板(mogura config)。
+// RunSettings 以獨立程式執行設定面板(mogura config)
 func RunSettings() error {
 	_, err := tea.NewProgram(settingsProgram{s: NewSettings()}).Run()
 	return err

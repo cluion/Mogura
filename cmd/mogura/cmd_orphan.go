@@ -108,7 +108,7 @@ func runOrphan(args []string) error {
 	}
 }
 
-// dropExcludedCands 濾掉已被全域排除的候選目錄。
+// dropExcludedCands 濾掉已被全域排除的候選目錄
 func dropExcludedCands(cands []orphan.Candidate) []orphan.Candidate {
 	ex := excludePaths()
 	if len(ex) == 0 {

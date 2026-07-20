@@ -9,7 +9,7 @@ import (
 	"mogura/internal/clean"
 )
 
-// Candidate 是一個找不到對應軟體的設定目錄,由使用者最終判斷是否刪除。
+// Candidate 是一個找不到對應軟體的設定目錄,由使用者最終判斷是否刪除
 type Candidate struct {
 	Path    string
 	Name    string
@@ -17,7 +17,7 @@ type Candidate struct {
 	ModTime time.Time
 }
 
-// skipNames 是桌面環境與系統基礎目錄,永不列為孤兒。
+// skipNames 是桌面環境與系統基礎目錄,永不列為孤兒
 var skipNames = map[string]bool{
 	"autostart": true, "systemd": true, "dconf": true, "pulse": true,
 	"gtk-2.0": true, "gtk-3.0": true, "gtk-4.0": true, "qt5ct": true, "qt6ct": true,
@@ -28,10 +28,10 @@ var skipNames = map[string]bool{
 	"flatpak": true, "gvfs-metadata": true, "backgrounds": true, "session": true,
 }
 
-// pkgPrefixes 用於比對發行版的套件命名慣例,如 pip → python3-pip。
+// pkgPrefixes 用於比對發行版的套件命名慣例,如 pip → python3-pip
 var pkgPrefixes = []string{"python3-", "python-", "golang-", "node-", "ruby-", "lib"}
 
-// DefaultBases 回傳預設掃描的設定目錄。
+// DefaultBases 回傳預設掃描的設定目錄
 func DefaultBases() []string {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -43,7 +43,7 @@ func DefaultBases() []string {
 	}
 }
 
-// ScanBases 找出 bases 下比對不到已安裝軟體的目錄。prog 可為 nil。
+// ScanBases 找出 bases 下比對不到已安裝軟體的目錄;prog 可為 nil
 func ScanBases(bases []string, installed map[string]bool, prog *clean.Progress) []Candidate {
 	var cands []Candidate
 	for _, base := range bases {
@@ -69,7 +69,7 @@ func ScanBases(bases []string, installed map[string]bool, prog *clean.Progress) 
 	return cands
 }
 
-// isActive 採保守比對:寧可漏報孤兒,不可把活軟體判成孤兒。
+// isActive 採保守比對:寧可漏報孤兒,不可把活軟體判成孤兒
 func isActive(name string, installed map[string]bool) bool {
 	if installed[name] {
 		return true
@@ -98,7 +98,7 @@ func isActive(name string, installed map[string]bool) bool {
 	return false
 }
 
-// IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1。
+// IdleDays 回傳距離最後修改的天數,無法取得時回傳 -1
 func (c Candidate) IdleDays() int {
 	if c.ModTime.IsZero() {
 		return -1

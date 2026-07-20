@@ -1,5 +1,5 @@
 // Package rules 定義宣告式清理規則:規則是資料不是程式碼,
-// 全部以 YAML 描述並用 go:embed 編進執行檔。
+// 全部以 YAML 描述並用 go:embed 編進執行檔
 package rules
 
 import (
@@ -19,8 +19,8 @@ import (
 //go:embed data/*.yaml
 var dataFS embed.FS
 
-// Rule 是一條清理規則。只有 Paths 時走內建的掃描+刪除;
-// 有 Action 時交給外部指令執行,大小用 Paths(內建平行掃描)或 Probe 估算。
+// Rule 是一條清理規則:只有 Paths 時走內建的掃描+刪除;
+// 有 Action 時交給外部指令執行,大小用 Paths(內建平行掃描)或 Probe 估算
 type Rule struct {
 	ID          string   `yaml:"id"`
 	Name        string   `yaml:"name"`
@@ -37,7 +37,7 @@ type Rule struct {
 
 var validRisks = map[string]bool{"low": true, "medium": true, "high": true}
 
-// Options 帶入使用者設定調整規則:全域排除清單與 {days} 佔位符的值。
+// Options 帶入使用者設定調整規則:全域排除清單與 {days} 佔位符的值
 type Options struct {
 	Exclude     []string // 併入每條路徑型規則的 exclude
 	JournalDays int      // 代入 {days},<1 時用預設 7
@@ -45,8 +45,8 @@ type Options struct {
 
 const defaultJournalDays = 7
 
-// Load 讀取所有內嵌規則檔,驗證後依 opt 調整並回傳。
-// Requires 指定的指令不存在時,該規則會被略過。
+// Load 讀取所有內嵌規則檔,驗證後依 opt 調整並回傳
+// Requires 指定的指令不存在時,該規則會被略過
 func Load(opt Options) ([]Rule, error) {
 	entries, err := dataFS.ReadDir("data")
 	if err != nil {
@@ -86,8 +86,8 @@ func Load(opt Options) ([]Rule, error) {
 	return all, nil
 }
 
-// withOptions 套用使用者設定。{days} 在翻譯後才代入,
-// 讓 i18n 對照表的鍵維持含佔位符的原文。
+// withOptions 套用使用者設定;{days} 在翻譯後才代入,
+// 讓 i18n 對照表的鍵維持含佔位符的原文
 func (r Rule) withOptions(opt Options) Rule {
 	days := opt.JournalDays
 	if days < 1 {
@@ -118,7 +118,7 @@ func validate(r Rule) error {
 	return nil
 }
 
-// ExpandHome 將開頭的 ~ 展開成使用者家目錄。
+// ExpandHome 將開頭的 ~ 展開成使用者家目錄
 func ExpandHome(p string) string {
 	if p == "~" || strings.HasPrefix(p, "~/") {
 		if home, err := os.UserHomeDir(); err == nil {

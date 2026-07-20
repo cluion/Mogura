@@ -41,7 +41,7 @@ type loadedMsg struct {
 	err     error
 }
 
-// statsMsg 是一批算完的統計;gen 用來丟棄舊串流(已離開目錄或已重載)的殘餘訊息。
+// statsMsg 是一批算完的統計;gen 用來丟棄舊串流(已離開目錄或已重載)的殘餘訊息
 type statsMsg struct {
 	gen     int
 	entries []Entry
@@ -122,7 +122,7 @@ type browser struct {
 	useTrash    bool         // 刪除走垃圾桶(設定面板關閉時刷新)
 }
 
-// Browse 啟動磁碟分析瀏覽器,從 root 開始向下鑽。
+// Browse 啟動磁碟分析瀏覽器,從 root 開始向下鑽
 func Browse(root string) error {
 	live := &clean.Progress{}
 	sizer := NewSizer()
@@ -136,8 +136,8 @@ func Browse(root string) error {
 	return err
 }
 
-// resortKeepCursor 依目前排序模式重排。使用者動過游標就跟著原項目走,
-// 沒動過則錨定頂端,開票時最大的項目浮上來會自動被選中。
+// resortKeepCursor 依目前排序模式重排:使用者動過游標就跟著原項目走,
+// 沒動過則錨定頂端,開票時最大的項目浮上來會自動被選中
 func (b *browser) resortKeepCursor() {
 	if len(b.entries) == 0 {
 		return
@@ -157,7 +157,7 @@ func (b *browser) resortKeepCursor() {
 	}
 }
 
-// prefetch 在游標停到目錄上時背景先算它的下一層,enter 時就有快取可用。
+// prefetch 在游標停到目錄上時背景先算它的下一層,enter 時就有快取可用
 func (b browser) prefetch() tea.Cmd {
 	if b.loading || b.cursor >= len(b.entries) {
 		return nil
@@ -181,7 +181,7 @@ func (b browser) load(dir string) tea.Cmd {
 	}
 }
 
-// waitStats 從串流批次撈統計:至少等一筆,趁機把已到的一起帶走(上限 64)。
+// waitStats 從串流批次撈統計:至少等一筆,趁機把已到的一起帶走(上限 64)
 func waitStats(gen int, ch <-chan Entry) tea.Cmd {
 	return func() tea.Msg {
 		e, ok := <-ch
@@ -216,7 +216,7 @@ func deleteEntry(e Entry, useTrash bool) tea.Cmd {
 	}
 }
 
-// deleteGuard 是 TUI 刪除的防呆:擋根目錄、第一層系統目錄與家目錄本身。
+// deleteGuard 是 TUI 刪除的防呆:擋根目錄、第一層系統目錄與家目錄本身
 func deleteGuard(path string) error {
 	if !filepath.IsAbs(path) || path == "/" {
 		return errors.New(i18n.T("拒絕刪除"))
@@ -472,7 +472,7 @@ func (b browser) View() string {
 	return sb.String()
 }
 
-// fillCells 計算長條圖填滿格數,夾限在 [0, barWidth] 防止負數 Repeat。
+// fillCells 計算長條圖填滿格數,夾限在 [0, barWidth] 防止負數 Repeat
 func fillCells(size, max int64) int {
 	if max <= 0 || size <= 0 {
 		return 0
@@ -484,7 +484,7 @@ func fillCells(size, max int64) int {
 	return filled
 }
 
-// ageLabel 把 mtime 轉成相對時間描述。
+// ageLabel 把 mtime 轉成相對時間描述
 func ageLabel(t time.Time) string {
 	if t.IsZero() {
 		return i18n.T("未知")

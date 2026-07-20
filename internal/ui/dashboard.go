@@ -12,8 +12,8 @@ import (
 	"mogura/internal/i18n"
 )
 
-// MenuItem 是總覽選單的一個項目。Label/Desc 存原文,顯示時才翻譯,
-// 讓面板內切語言立即生效。
+// MenuItem 是總覽選單的一個項目;Label/Desc 存原文,顯示時才翻譯,
+// 讓面板內切語言立即生效
 type MenuItem struct {
 	ID    string
 	Label string
@@ -35,8 +35,8 @@ func dashTick() tea.Cmd {
 	return tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return dashTickMsg{} })
 }
 
-// RunDashboard 顯示總覽選單,背景掃描的進度即時更新。
-// 回傳使用者選擇的項目 ID,離開時回傳空字串。
+// RunDashboard 顯示總覽選單,背景掃描的進度即時更新
+// 回傳使用者選擇的項目 ID,離開時回傳空字串
 func RunDashboard(items []MenuItem, prog *clean.Progress, total func() (int64, bool)) (string, error) {
 	m := dashModel{items: items, prog: prog, total: total}
 	final, err := tea.NewProgram(m).Run()
