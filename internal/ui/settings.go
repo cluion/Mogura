@@ -61,16 +61,29 @@ func (s *Settings) cycle(delta int) {
 	case 1:
 		s.cfg.Delete = cycleValue(deleteValues, s.cfg.Delete, delta)
 	case 2:
-		idx := 1 // 手動改過的自訂天數不在清單裡,從預設 7 起跳
-		for i, v := range journalDayValues {
-			if v == s.cfg.JournalDays {
-				idx = i
-				break
-			}
-		}
-		s.cfg.JournalDays = journalDayValues[(idx+delta+len(journalDayValues))%len(journalDayValues)]
+		s.cfg.JournalDays = cycleDays(s.cfg.JournalDays, delta)
 	}
 	s.saveErr = config.Save(s.cfg)
+}
+
+// cycleDays 依大小接續:向右取下一個更大的預設值,向左取下一個更小的,
+// 到底則繞回另一端。設定檔若被手動改成清單外的天數也適用,
+// 使用者按下的方向永遠等於數值變動的方向。journalDayValues 須由小到大排序
+func cycleDays(current, delta int) int {
+	if delta > 0 {
+		for _, v := range journalDayValues {
+			if v > current {
+				return v
+			}
+		}
+		return journalDayValues[0]
+	}
+	for i := len(journalDayValues) - 1; i >= 0; i-- {
+		if journalDayValues[i] < current {
+			return journalDayValues[i]
+		}
+	}
+	return journalDayValues[len(journalDayValues)-1]
 }
 
 func cycleValue(values []string, current string, delta int) string {

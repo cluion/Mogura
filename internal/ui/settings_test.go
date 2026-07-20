@@ -160,3 +160,39 @@ func TestSettingsViewRendersAllRows(t *testing.T) {
 		}
 	}
 }
+
+// TestCycleJournalDaysFromCustomValue 涵蓋設定檔被手動改成清單外天數的情況
+//
+// journalDayValues 是 [3 7 14 30]。使用者可以在 config.yaml 寫任何合法天數,
+// 此時循環以大小接續而非索引位移:向右一定變大、向左一定變小,
+// 兩端才繞回。使用者按下的方向永遠等於數值變動的方向
+func TestCycleJournalDaysFromCustomValue(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		custom      int
+		right, left int
+	}{
+		{"落在 7 與 14 之間", 10, 14, 7},
+		{"落在 14 與 30 之間", 25, 30, 14},
+		{"小於最小值,向左繞到最大", 1, 3, 30},
+		{"大於最大值,向右繞到最小", 100, 3, 30},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+			if err := config.Save(config.Config{Language: "auto", Delete: "direct", JournalDays: tc.custom}); err != nil {
+				t.Fatal(err)
+			}
+			s := settingsAt(2)
+			if s.cfg.JournalDays != tc.custom {
+				t.Fatalf("前置條件失敗:自訂天數應被讀入,實際 %d", s.cfg.JournalDays)
+			}
+
+			if got := pressSettings(s, "right").cfg.JournalDays; got != tc.right {
+				t.Errorf("%d 按右 = %d, 預期下一個更大的 %d", tc.custom, got, tc.right)
+			}
+			if got := pressSettings(s, "left").cfg.JournalDays; got != tc.left {
+				t.Errorf("%d 按左 = %d, 預期下一個更小的 %d", tc.custom, got, tc.left)
+			}
+		})
+	}
+}
