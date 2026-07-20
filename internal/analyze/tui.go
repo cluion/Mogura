@@ -380,7 +380,7 @@ func (b browser) View() string {
 		return b.settings.View()
 	}
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Render(i18n.T("🦡 Mogura 磁碟分析")) + "  " + pathStyle.Render(b.cwd) +
+	sb.WriteString(headerStyle.Render(i18n.Brand("Mogura 磁碟分析")) + "  " + pathStyle.Render(b.cwd) +
 		pathStyle.Render(i18n.T("  排序:")+i18n.T(b.sort.label())) + "\n\n")
 
 	if b.loading {

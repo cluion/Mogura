@@ -74,7 +74,7 @@ Options:
 	"dev 掃描僅支援家目錄內的路徑: %s": "dev only scans paths inside your home directory: %s",
 
 	// orphan
-	"🦡 蒐集已安裝軟體清單...":                          "🦡 Collecting installed software list...",
+	"蒐集已安裝軟體清單...":                            "Collecting installed software list...",
 	"比對設定目錄中...":                              "Matching config directories...",
 	"沒有找到孤兒設定,很乾淨!":                           "No orphaned configs found. Squeaky clean!",
 	"dpkg 殘留設定(%d 個已移除套件)":                    "dpkg leftover configs (%d removed packages)",
@@ -111,7 +111,7 @@ Options:
 	"config 需要互動終端機":                        "config needs an interactive terminal",
 	"completion 需要指定 shell:bash、zsh 或 fish": "completion needs a shell: bash, zsh or fish",
 	"不支援的 shell: %s(支援 bash、zsh、fish)":      "unsupported shell: %s (bash, zsh and fish are supported)",
-	"🦡 Mogura 磁碟分析":                         "🦡 Mogura Disk Analyzer",
+	"Mogura 磁碟分析":                           "Mogura Disk Analyzer",
 	"  排序:":                                 "  sort: ",
 	"大小":                                    "size",
 	"名稱":                                    "name",
@@ -138,7 +138,7 @@ Options:
 	"拒絕刪除家目錄":     "refusing to delete the home directory",
 
 	// dashboard
-	"🦡 Mogura — 總覽":                    "🦡 Mogura — Overview",
+	"Mogura — 總覽":                      "Mogura — Overview",
 	"可回收空間 ":                           "Reclaimable ",
 	"(可估算項目)":                          " (measurable items)",
 	"可回收空間 掃描中... %s · %s 檔":           "Reclaimable: scanning... %s · %s files",
@@ -160,11 +160,11 @@ Options:
 	"\n按 Enter 返回總覽...":                "\nPress Enter to return to the overview...",
 
 	// ui / settings
-	"🦡 Mogura — 設定": "🦡 Mogura — Settings",
-	"語言":            "Language",
-	"自動(跟隨系統)":      "Auto (follow system)",
-	"設定儲存失敗:":       "failed to save settings: ",
-	"設定檔:%s":        "Config file: %s",
+	"Mogura — 設定": "Mogura — Settings",
+	"語言":          "Language",
+	"自動(跟隨系統)":    "Auto (follow system)",
+	"設定儲存失敗:":     "failed to save settings: ",
+	"設定檔:%s":      "Config file: %s",
 	"排除清單(exclude)等進階設定請直接編輯設定檔": "Advanced options like the exclude list are edited in the config file directly",
 	"\n↑↓ 選擇 · ←→ 切換 · enter 確定": "\n↑↓ select · ←→ change · enter done",
 	"刪除方式":       "Delete mode",
@@ -183,8 +183,8 @@ Options:
 	"互動介面啟動失敗: %w":            "failed to start interactive UI: %w",
 
 	// monitor
-	"🦡 取樣中...\n":                          "🦡 Sampling...\n",
-	"🦡 Mogura 系統監控":                       "🦡 Mogura System Monitor",
+	"取樣中...\n":    "Sampling...\n",
+	"Mogura 系統監控": "Mogura System Monitor",
 	"%s · 開機 %d 天 %s · 負載 %.2f %.2f %.2f": "%s · up %dd %s · load %.2f %.2f %.2f",
 	"記憶體":               "Memory",
 	"  %s / %s · 可用 %s": "  %s / %s · available %s",

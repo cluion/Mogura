@@ -17,7 +17,7 @@ if [ "$(uname -s)" != "Linux" ]; then
   exit 1
 fi
 
-echo "🦡 Resolving latest release..."
+echo "⛏️ Resolving latest release..."
 TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
   | grep '"tag_name"' | head -1 | cut -d '"' -f 4)
 [ -n "$TAG" ] || { echo "Could not resolve the latest release of ${REPO}" >&2; exit 1; }
@@ -25,7 +25,7 @@ TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
 VERSION="${TAG#v}"
 URL="https://github.com/${REPO}/releases/download/${TAG}/mogura_${VERSION}_linux_${ARCH}.tar.gz"
 
-echo "🦡 Downloading ${TAG} (linux/${ARCH})..."
+echo "⛏️ Downloading ${TAG} (linux/${ARCH})..."
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 curl -fsSL "$URL" -o "$TMP/mogura.tar.gz"

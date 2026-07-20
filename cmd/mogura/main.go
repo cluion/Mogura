@@ -144,7 +144,7 @@ func progressLoop(label string, prog *clean.Progress, done <-chan struct{}) {
 			fmt.Print("\r\033[K") // 清掉進度列
 			return
 		case <-tick.C:
-			fmt.Printf("\r\033[K🦡 %s  %s", label,
+			fmt.Printf("\r\033[K%s  %s", i18n.Prefix(label),
 				i18n.Tf("已掃描 %s · %s 個檔案", clean.Humanize(prog.Bytes()), clean.GroupDigits(prog.Files())))
 		}
 	}

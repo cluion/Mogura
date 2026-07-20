@@ -83,14 +83,14 @@ func bar(pct float64, width int) string {
 
 func (d dashboard) View() string {
 	if !d.ready {
-		return i18n.T("🦡 取樣中...\n")
+		return i18n.Brand("取樣中...\n")
 	}
 	s := d.snap
 	var b strings.Builder
 
 	up := s.Uptime.Round(time.Minute)
 	days := int(up.Hours()) / 24
-	b.WriteString(headerStyle.Render(i18n.T("🦡 Mogura 系統監控")) + "  " +
+	b.WriteString(headerStyle.Render(i18n.Brand("Mogura 系統監控")) + "  " +
 		faintStyle.Render(i18n.Tf("%s · 開機 %d 天 %s · 負載 %.2f %.2f %.2f",
 			s.Hostname, days, up-time.Duration(days)*24*time.Hour, s.Load1, s.Load5, s.Load15)) + "\n\n")
 

@@ -178,7 +178,7 @@ func (m model) View() string {
 		return m.settings.View()
 	}
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("🦡 "+m.title) + "\n\n")
+	b.WriteString(titleStyle.Render(i18n.Prefix(m.title)) + "\n\n")
 
 	var total int64
 	for _, it := range m.items {

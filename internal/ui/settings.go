@@ -104,7 +104,7 @@ func (s Settings) deleteLabel() string {
 
 func (s Settings) View() string {
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(i18n.T("🦡 Mogura — 設定")) + "\n\n")
+	b.WriteString(titleStyle.Render(i18n.Brand("Mogura — 設定")) + "\n\n")
 	rows := []struct{ label, value string }{
 		{i18n.T("語言"), s.langLabel()},
 		{i18n.T("刪除方式"), s.deleteLabel()},

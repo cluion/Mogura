@@ -1,4 +1,4 @@
-# 🦡 Mogura
+# ⛏️ Mogura
 
 [![CI](https://github.com/cluion/Mogura/actions/workflows/ci.yml/badge.svg)](https://github.com/cluion/Mogura/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/cluion/Mogura)](go.mod)

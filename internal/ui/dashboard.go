@@ -92,7 +92,7 @@ func (m dashModel) View() string {
 		return m.settings.View()
 	}
 	var b strings.Builder
-	b.WriteString(titleStyle.Render(i18n.T("🦡 Mogura — 總覽")) + "\n\n")
+	b.WriteString(titleStyle.Render(i18n.Brand("Mogura — 總覽")) + "\n\n")
 
 	if sum, done := m.total(); done {
 		b.WriteString("  " + i18n.T("可回收空間 ") + totalStyle.Render(clean.Humanize(sum)) +

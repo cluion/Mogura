@@ -31,7 +31,7 @@ func runOrphan(args []string) error {
 		return fmt.Errorf(i18n.T("無法取得家目錄: %w"), err)
 	}
 
-	fmt.Println(i18n.T("🦡 蒐集已安裝軟體清單..."))
+	fmt.Println(i18n.Brand("蒐集已安裝軟體清單..."))
 	sys := orphan.Detect()
 	prog := &clean.Progress{}
 	var cands []orphan.Candidate
