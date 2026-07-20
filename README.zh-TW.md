@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/cluion/Mogura/main/install.sh | sh
 - **Arch(AUR)**:`yay -S mogura-bin`
 - **原始碼**:`CGO_ENABLED=0 go build -o mogura ./cmd/mogura`
 
-清理規則會依發行版自動適配(apt / pacman / dnf / zypper / snap / flatpak,沒安裝的工具對應規則自動隱藏)。
+清理規則會依發行版自動適配(apt / pacman / dnf / zypper / snap / flatpak / docker,沒安裝的工具對應規則自動隱藏)。
 
 ## 使用
 
@@ -55,6 +55,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 - 預設先掃描、顯示每項可回收大小,勾選並確認後才會動手
 - 設定中可改為「移至垃圾桶」:刪除走系統垃圾桶(gio trash / XDG Trash),留一層反悔空間
 - 清單中按 `x` 可將項目加入排除清單,之後掃描不再顯示(clean、dev、orphan 通用)
+- 標為高風險的項目不可還原,執行前會要求第二道確認,必須完整輸入 `yes`
 - 使用者層項目(快取、垃圾桶)不需要 root;標 🔒 的系統層項目才會要求 sudo
 - 數字是誠實的 `du` 口徑:實際磁碟佔用(`st_blocks`)、硬連結只計一次
 - 清理規則是宣告式 YAML(`internal/rules/data/`),新增規則不用改程式碼

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 
 	"mogura/internal/clean"
 	"mogura/internal/i18n"
@@ -89,5 +87,5 @@ func runDashboard() error {
 // pause 讓有列印輸出的子功能結果停留在畫面上,再返回總覽
 func pause() {
 	fmt.Print(i18n.T("\n按 Enter 返回總覽..."))
-	_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
+	_, _ = stdin.ReadString('\n')
 }

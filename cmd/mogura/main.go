@@ -106,12 +106,43 @@ func confirm(labels []string, sizes []int64, needRoot bool) bool {
 	return promptYes()
 }
 
+// stdin 全程共用一個 reader。每次 bufio.NewReader 都會丟掉前一個已預讀的內容,
+// 連續兩道提示時第二道會讀不到輸入
+var stdin = bufio.NewReader(os.Stdin)
+
 // promptYes 讀取使用者的 y/N 確認
 func promptYes() bool {
 	fmt.Print(i18n.T("確定執行?[y/N] "))
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	line, _ := stdin.ReadString('\n')
 	answer := strings.ToLower(strings.TrimSpace(line))
 	return answer == "y" || answer == "yes"
+}
+
+// highRiskNames 挑出選定項目中 risk 為 high 的名稱
+func highRiskNames(picked []clean.Result) []string {
+	var names []string
+	for _, r := range picked {
+		if r.Rule.Risk == "high" {
+			names = append(names, r.Rule.Name)
+		}
+	}
+	return names
+}
+
+// confirmHighRisk 對高風險項目要求第二道確認。這類項目不可逆,
+// 且 action 型規則不受垃圾桶模式保護,故要求完整輸入 yes —— 單一個 y 太容易連按帶過
+func confirmHighRisk(picked []clean.Result) bool {
+	names := highRiskNames(picked)
+	if len(names) == 0 {
+		return true
+	}
+	fmt.Println(i18n.T("\n⚠ 以下項目無法還原,垃圾桶模式也不適用:"))
+	for _, n := range names {
+		fmt.Printf("  · %s\n", n)
+	}
+	fmt.Print(i18n.T("確認請完整輸入 yes: "))
+	line, _ := stdin.ReadString('\n')
+	return strings.TrimSpace(strings.ToLower(line)) == "yes"
 }
 
 func isTTY() bool {
@@ -191,6 +222,10 @@ func confirmAndRun(picked []clean.Result) error {
 		fmt.Println(i18n.T("🗑 垃圾桶模式:項目會移至垃圾桶,可還原(action 型項目除外)。"))
 	}
 	if !confirm(labels, sizes, needRoot) {
+		fmt.Println(i18n.T("已取消。"))
+		return nil
+	}
+	if !confirmHighRisk(picked) {
 		fmt.Println(i18n.T("已取消。"))
 		return nil
 	}

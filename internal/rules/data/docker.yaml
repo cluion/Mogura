@@ -1,0 +1,45 @@
+# Docker 清理規則 — 需要 docker 指令與 daemon 存取權
+#
+# probe 從 docker system df 取可回收量。該指令只輸出人類可讀字串,
+# 故以 sed/tr/numfmt 轉成位元組;三者皆屬 coreutils,不新增執行期依賴。
+# daemon 不可用或無權限時 probe 無輸出,大小顯示為「—」而非錯誤數字。
+#
+# 每條規則的 probe 與 action 語意必須對齊:docker system df 的 Images
+# 可回收量算的是「所有未使用映像」,對應 image prune -a 而非只刪懸空的
+# image prune。錯配會讓顯示的數字遠大於實際釋放量。
+
+- id: docker-build-cache
+  name: Docker 建置快取
+  description: 建置過程留下的中介層,下次建置時會重新產生
+  requires: docker
+  probe: "docker system df --format '{{.Type}}|{{.Reclaimable}}' | grep '^Build Cache|' | cut -d'|' -f2 | sed 's/ (.*//; s/B$//' | tr 'k' 'K' | numfmt --from=si"
+  action: "docker builder prune -f"
+  risk: low
+
+- id: docker-stopped-containers
+  name: Docker 已停止容器
+  description: 已結束但未移除的容器,連同其可寫層一併刪除
+  requires: docker
+  probe: "docker system df --format '{{.Type}}|{{.Reclaimable}}' | grep '^Containers|' | cut -d'|' -f2 | sed 's/ (.*//; s/B$//' | tr 'k' 'K' | numfmt --from=si"
+  action: "docker container prune -f"
+  risk: medium
+
+- id: docker-unused-images
+  name: Docker 未使用映像
+  description: 沒有任何容器在用的映像,需要時得重新拉取
+  requires: docker
+  probe: "docker system df --format '{{.Type}}|{{.Reclaimable}}' | grep '^Images|' | cut -d'|' -f2 | sed 's/ (.*//; s/B$//' | tr 'k' 'K' | numfmt --from=si"
+  action: "docker image prune -a -f"
+  risk: medium
+
+# 這條刻意不設 probe。docker system df 的 Local Volumes 可回收量算的是全部
+# 未使用資料卷,對應 volume prune -a —— 而 -a 會連具名資料卷一起刪。compose
+# 專案只要 down 過,其具名資料卷就會被判定為未使用,資料庫因此極易被誤刪。
+# 故只用預設的 prune(僅匿名資料卷),大小改為未知而非套用語意不符的數字。
+# 仍標 high 觸發二次確認,見 cmd/mogura/main.go 的 confirmHighRisk
+- id: docker-volumes
+  name: Docker 匿名資料卷
+  description: 沒有容器掛載的匿名資料卷,具名資料卷不受影響
+  requires: docker
+  action: "docker volume prune -f"
+  risk: high

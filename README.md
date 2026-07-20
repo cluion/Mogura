@@ -29,7 +29,7 @@ Other options:
 - **Arch (AUR)**: `yay -S mogura-bin`
 - **From source**: `CGO_ENABLED=0 go build -o mogura ./cmd/mogura`
 
-Cleaning rules adapt to your distro automatically (apt / pacman / dnf / zypper / snap / flatpak — rules for tools you don't have simply stay hidden).
+Cleaning rules adapt to your distro automatically (apt / pacman / dnf / zypper / snap / flatpak / docker — rules for tools you don't have simply stay hidden).
 
 ## Usage
 
@@ -55,6 +55,7 @@ mogura clean --json | jq '[.[] | select(.size_known)] | map(.size_bytes) | add'
 - Scans first and shows the size of every item; nothing is deleted until you select and confirm
 - Optional trash mode in settings: deletions go to the system trash (gio trash / XDG Trash) so you can undo
 - Press `x` on any list item to add it to the exclude list — future scans skip it (works in clean, dev and orphan)
+- Items marked high risk are irreversible and ask for a second confirmation — you must type `yes` in full
 - User-level items (caches, trash) never need root; items marked 🔒 ask for sudo per item
 - Sizes are honest `du` semantics: real disk usage (`st_blocks`), hardlinks counted once
 - Cleaning rules are declarative YAML (`internal/rules/data/`) — add a rule without touching code
